@@ -3,14 +3,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 interface UserAvatarProfileProps {
   className?: string;
   showInfo?: boolean;
-  user: {
+  user?: {
     imageUrl?: string;
     fullName?: string | null;
     emailAddresses: Array<{ emailAddress: string }>;
   } | null;
 }
 
-export function UserAvatarProfile({ className, showInfo = false, user }: UserAvatarProfileProps) {
+export function UserAvatarProfile({
+  className,
+  showInfo = false,
+  user = null
+}: UserAvatarProfileProps) {
   return (
     <div className='flex items-center gap-2'>
       <Avatar className={className}>
