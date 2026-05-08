@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "author": {
-    "name": "Kiran",
-    "url": "https://github.com/Kiranism"
+    "name": "PetraLabs",
+    "url": "https://petralabs.xyz"
   },
   "scripts": {
     "dev": "node scripts/postinstall.js 2>/dev/null; next dev",

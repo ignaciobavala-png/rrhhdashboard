@@ -5,8 +5,8 @@
 - **Framework**: Next.js 16 (App Router) + TypeScript strict
 - **UI**: Shadcn UI + Tailwind CSS v4
 - **Estado**: Zustand v5
-- **Auth**: Clerk (orgs multi-tenant)
-- **DB**: Supabase PostgreSQL + RLS + Storage
+- **Auth**: Suprimida para desarrollo. Pendiente migrar a **Supabase Auth**.
+- **DB**: Supabase PostgreSQL + RLS + Storage (pendiente backend)
 - **Package**: pnpm
 - **Linting**: OxLint + Oxfmt
 
@@ -14,30 +14,72 @@
 
 - Server Components por defecto, Client Components solo cuando hay interactividad
 - Cada módulo en `src/features/<modulo>/`
-- Migraciones SQL en `supabase/migrations/`
-- Tema por defecto: `petralabs` (Indigo primario, Esmeralda acento)
+- Migraciones SQL en `supabase/migrations/` (pendiente)
+- Tema por defecto: `petralabs` (Indigo `#4f46e5` primario, Esmeralda `#10b981` acento)
 - Tipografía: Inter (sans), JetBrains Mono (mono)
 - Sin testing, sin Docker
 
 ## Comandos
 
 ```bash
-pnpm dev          # Desarrollo
+pnpm dev          # Desarrollo (localhost:3000, sin auth)
 pnpm build        # Build producción
 pnpm lint         # OxLint
 ```
+
+## Estado Actual (Mayo 2026)
+
+El frontend está en fase de maqueta. No requiere autenticación para desarrollo.
+Todos los módulos son placeholders con diseño listo.
 
 ## Módulos
 
 | Ruta | Módulo | Estado |
 |------|--------|--------|
+| `/dashboard/overview` | Dashboard RRHH | Cards + gráficos |
 | `/dashboard/talent` | Gestión de Talento | Placeholder |
+| `/dashboard/talent/new` | Nuevo Empleado | Placeholder |
+| `/dashboard/talent/[id]` | Perfil de Empleado | Placeholder |
 | `/dashboard/documents` | Expediente Digital | Placeholder |
 | `/dashboard/operations` | Control Operativo | Placeholder |
-| `/dashboard/payroll` | Nómina | Placeholder |
+| `/dashboard/payroll` | Salarios | Placeholder |
 | `/dashboard/admin` | Admin Center | Placeholder |
+| `/dashboard/profile` | Perfil de Usuario | Placeholder |
+| `/dashboard/notifications` | Notificaciones | Placeholder |
 
-## Arquitectura Multi-tenant
+## Arquitectura (Futura)
 
-Clerk Organization → `organization_id` → RLS en todas las tablas de Supabase.
-Cada tenant ve solo sus datos.
+Supabase Auth → `usuarios` → `empresas` + `miembros` → RLS en todas las tablas.
+Cada empresa ve solo sus datos. Login clásico usuario/contraseña sin OAuth social.
+
+## Cleanup Realizado
+
+- Eliminados: Workspaces, Billing, Products, Users, Chat, Kanban, Forms, Elements, React Query demo, About, Privacy, Terms
+- ClerkProvider removido del layout (ya no hay cartel de keyless mode)
+- Navegación simplificada solo con módulos RRHH
+- Dashboard con métricas en español (empleados, ausentes, vacaciones, masa salarial)
+- Ícono de GitHub en navbar removido
+- Tema `petralabs` como default
+
+## Issues Conocidos
+
+- `@clerk/nextjs` y `@clerk/themes` están en `package.json` como dependencias no usadas desde que se removió ClerkProvider. Se pueden eliminar con `pnpm remove @clerk/nextjs @clerk/themes`.
+- API routes `/api/products` y `/api/users` son heredadas del starter y no se usan.
+- `features/overview/components/overview.tsx` existe pero no es importado (es código muerto del starter).
+- Sin autenticación — accesible a cualquiera en desarrollo.
+
+## Plan de Migración Clerk → Supabase Auth
+
+1. Eliminar `@clerk/nextjs` y `@clerk/themes` de dependencies
+2. `pnpm add @supabase/ssr @supabase/supabase-js`
+3. Crear `src/lib/supabase/client.ts` (browser), `server.ts` (server), `middleware.ts`
+4. Migrar `proxy.ts` de `clerkMiddleware` a Supabase middleware
+5. Crear login page custom en `/auth/sign-in` con Shadcn
+6. Migraciones SQL: `empresas`, `miembros`, `perfiles`, RLS
+7. hooks: `useUser()` → hook propio de Supabase, `useEmpresa()` para orgs
+8. Auth en pages protegidas con `supabase.auth.getUser()`
+
+## Contexto Adicional
+
+Proyecto creado el 2026-05-08. Basado en next-shadcn-dashboard-starter.
+Desarrollador: Ignacio Bavala. Stack preferido en perfil-desarrollador del vault Obsidian.
