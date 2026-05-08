@@ -1,41 +1,41 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 
-const salesData = [
+const employees = [
   {
-    name: 'Olivia Martin',
-    email: 'olivia.martin@email.com',
+    name: 'Martín Olivieri',
+    puesto: 'Desarrollador Senior',
     avatar: 'https://api.slingacademy.com/public/sample-users/1.png',
-    fallback: 'OM',
-    amount: '+$1,999.00'
+    fallback: 'MO',
+    evento: 'Licencia aprobada'
   },
   {
-    name: 'Jackson Lee',
-    email: 'jackson.lee@email.com',
+    name: 'Laura Juárez',
+    puesto: 'Diseñadora UX',
     avatar: 'https://api.slingacademy.com/public/sample-users/2.png',
-    fallback: 'JL',
-    amount: '+$39.00'
+    fallback: 'LJ',
+    evento: 'Vacaciones solicitadas'
   },
   {
-    name: 'Isabella Nguyen',
-    email: 'isabella.nguyen@email.com',
+    name: 'Ignacio Báez',
+    puesto: 'Project Manager',
     avatar: 'https://api.slingacademy.com/public/sample-users/3.png',
-    fallback: 'IN',
-    amount: '+$299.00'
+    fallback: 'IB',
+    evento: 'Ingreso registrado'
   },
   {
-    name: 'William Kim',
-    email: 'will@email.com',
+    name: 'Camila Witt',
+    puesto: 'Contadora',
     avatar: 'https://api.slingacademy.com/public/sample-users/4.png',
-    fallback: 'WK',
-    amount: '+$99.00'
+    fallback: 'CW',
+    evento: 'Recibo de sueldo emitido'
   },
   {
-    name: 'Sofia Davis',
-    email: 'sofia.davis@email.com',
+    name: 'Sofía Dávila',
+    puesto: 'RRHH',
     avatar: 'https://api.slingacademy.com/public/sample-users/5.png',
     fallback: 'SD',
-    amount: '+$39.00'
+    evento: 'Nuevo empleado cargado'
   }
 ];
 
@@ -43,22 +43,22 @@ export function RecentSales() {
   return (
     <Card className='h-full'>
       <CardHeader>
-        <CardTitle>Recent Sales</CardTitle>
-        <CardDescription>You made 265 sales this month.</CardDescription>
+        <CardTitle>Actividad Reciente</CardTitle>
+        <CardDescription>12 novedades en las últimas 24 hs</CardDescription>
       </CardHeader>
       <CardContent>
         <div className='space-y-8'>
-          {salesData.map((sale, index) => (
+          {employees.map((emp, index) => (
             <div key={index} className='flex items-center'>
               <Avatar className='h-9 w-9'>
-                <AvatarImage src={sale.avatar} alt='Avatar' />
-                <AvatarFallback>{sale.fallback}</AvatarFallback>
+                <AvatarImage src={emp.avatar} alt='Avatar' />
+                <AvatarFallback>{emp.fallback}</AvatarFallback>
               </Avatar>
               <div className='ml-4 space-y-1'>
-                <p className='text-sm leading-none font-medium'>{sale.name}</p>
-                <p className='text-muted-foreground text-sm'>{sale.email}</p>
+                <p className='text-sm leading-none font-medium'>{emp.name}</p>
+                <p className='text-muted-foreground text-sm'>{emp.puesto}</p>
               </div>
-              <div className='ml-auto font-medium'>{sale.amount}</div>
+              <div className='ml-auto text-sm font-medium'>{emp.evento}</div>
             </div>
           ))}
         </div>

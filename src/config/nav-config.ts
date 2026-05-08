@@ -2,7 +2,7 @@ import { NavGroup } from '@/types';
 
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
+    label: 'Panel Principal',
     items: [
       {
         title: 'Dashboard',
@@ -11,25 +11,11 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         shortcut: ['d', 'd'],
         items: []
-      },
-      {
-        title: 'Workspaces',
-        url: '/dashboard/workspaces',
-        icon: 'workspace',
-        isActive: false,
-        items: []
-      },
-      {
-        title: 'Teams',
-        url: '/dashboard/workspaces/team',
-        icon: 'teams',
-        isActive: false,
-        items: []
       }
     ]
   },
   {
-    label: 'RRHH',
+    label: 'Recursos Humanos',
     items: [
       {
         title: 'Talento',
@@ -66,7 +52,7 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
-    label: 'Administración',
+    label: 'Configuración',
     items: [
       {
         title: 'Admin Center',
@@ -77,42 +63,20 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Billing',
-        url: '/dashboard/billing',
-        icon: 'billing',
+        title: 'Perfil',
+        url: '/dashboard/profile',
+        icon: 'profile',
         isActive: false,
+        shortcut: ['p', 'p'],
         items: []
-      }
-    ]
-  },
-  {
-    label: '',
-    items: [
+      },
       {
-        title: 'Account',
-        url: '#',
-        icon: 'account',
-        isActive: true,
-        items: [
-          {
-            title: 'Profile',
-            url: '/dashboard/profile',
-            icon: 'profile',
-            shortcut: ['m', 'm']
-          },
-          {
-            title: 'Notifications',
-            url: '/dashboard/notifications',
-            icon: 'notification',
-            shortcut: ['n', 'n']
-          },
-          {
-            title: 'Login',
-            shortcut: ['l', 'l'],
-            url: '/',
-            icon: 'login'
-          }
-        ]
+        title: 'Notificaciones',
+        url: '/dashboard/notifications',
+        icon: 'notification',
+        isActive: false,
+        shortcut: ['n', 'n'],
+        items: []
       }
     ]
   }
