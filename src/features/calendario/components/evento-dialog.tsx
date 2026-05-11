@@ -20,7 +20,15 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Icons } from '@/components/icons';
-import type { EventoCalendario } from '@/constants/mock-api-calendario';
+type EventoCalendario = {
+  id: number;
+  fecha: string;
+  titulo: string;
+  tipo: 'licencia' | 'sueldo' | 'estudio' | 'ausencia';
+  empleado: string;
+  empleadoId: number;
+  descripcion?: string;
+};
 
 const tipos = [
   { value: 'licencia', label: 'Licencia' },
