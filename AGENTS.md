@@ -36,16 +36,22 @@ Todos los módulos son placeholders con diseño listo.
 
 | Ruta | Módulo | Estado |
 |------|--------|--------|
-| `/dashboard/overview` | Dashboard RRHH | Cards + gráficos |
-| `/dashboard/talent` | Gestión de Talento | Placeholder |
+| `/dashboard/overview` | Resumen RRHH | Cards + gráficos Recharts |
+| `/dashboard/legajo` | Legajo | Tabla + detalle empleado (50 mock) |
+| `/dashboard/legajo/[id]` | Detalle Empleado | Datos personales + laborales + modalidad |
+| `/dashboard/calendario` | Calendario | Calendario editable (licencias/sueldos/estudio/ausencias) |
+| `/dashboard/talent` | Gestión de Talento | Evaluaciones + objetivos + KPIs |
 | `/dashboard/talent/new` | Nuevo Empleado | Placeholder |
 | `/dashboard/talent/[id]` | Perfil de Empleado | Placeholder |
+| `/dashboard/reuniones` | Reuniones | Tabla con minutas (15 mock) |
+| `/dashboard/manuales` | Manuales | Tabla con manuales (12 mock) |
+| `/dashboard/flota` | Flota Celulares | Tabla con equipos (20 mock) |
 | `/dashboard/documents` | Expediente Digital | Placeholder |
 | `/dashboard/operations` | Control Operativo | Placeholder |
-| `/dashboard/payroll` | Salarios | Placeholder |
+| `/dashboard/payroll` | Sueldos | Placeholder |
 | `/dashboard/admin` | Admin Center | Placeholder |
 | `/dashboard/profile` | Perfil de Usuario | Placeholder |
-| `/dashboard/notifications` | Notificaciones | Placeholder |
+| `/dashboard/notifications` | Notificaciones | Funcional con mock data |
 
 ## Arquitectura (Futura)
 
@@ -56,7 +62,7 @@ Cada empresa ve solo sus datos. Login clásico usuario/contraseña sin OAuth soc
 
 - Eliminados: Workspaces, Billing, Products, Users, Chat, Kanban, Forms, Elements, React Query demo, About, Privacy, Terms
 - ClerkProvider removido del layout (ya no hay cartel de keyless mode)
-- Navegación simplificada solo con módulos RRHH
+- Navegación reorganizada: Gestión de Personas + Administración + Configuración
 - Dashboard con métricas en español (empleados, ausentes, vacaciones, masa salarial)
 - Ícono de GitHub en navbar removido
 - Tema `petralabs` como default
