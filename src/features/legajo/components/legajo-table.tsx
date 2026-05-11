@@ -8,6 +8,7 @@ import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { columns } from './legajo-table/columns';
+import { getEmpleados } from '../api/service';
 
 export function LegajoTable() {
   const [params] = useQueryStates({
@@ -15,15 +16,12 @@ export function LegajoTable() {
     perPage: parseAsInteger.withDefault(10),
     name: parseAsString,
     sort: getSortingStateParser([
-      'nombre',
-      'apellido',
+      'nombre_apellido',
       'dni',
-      'puesto',
-      'departamento',
-      'seniority',
-      'salario',
-      'estado',
-      'modalidad'
+      'equipo_ingreso',
+      'fecha_ingreso',
+      'modalidad',
+      'activo'
     ]).withDefault([])
   });
 
@@ -36,10 +34,7 @@ export function LegajoTable() {
 
   const { data } = useSuspenseQuery({
     queryKey: ['legajo', filters],
-    queryFn: async () => {
-      const { fakeLegajo } = await import('@/constants/mock-api-legajo');
-      return fakeLegajo.getEmpleados(filters);
-    }
+    queryFn: () => getEmpleados(filters)
   });
 
   const { table } = useDataTable({

@@ -14,10 +14,7 @@ export default function ReunionesListingPage() {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery({
     queryKey: ['reuniones', filters],
-    queryFn: async () => {
-      const { fakeReuniones } = await import('@/constants/mock-api-reuniones');
-      return fakeReuniones.getReuniones(filters);
-    }
+    queryFn: async () => ({ items: [], total_items: 0 })
   });
 
   return (

@@ -3,6 +3,7 @@ import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { Suspense } from 'react';
 import { ManualesTable, ManualesTableSkeleton } from './manuales-table';
+import { getManuales } from '../api/service';
 
 export default function ManualesListingPage() {
   const page = searchParamsCache.get('page');
@@ -14,10 +15,7 @@ export default function ManualesListingPage() {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery({
     queryKey: ['manuales', filters],
-    queryFn: async () => {
-      const { fakeManuales } = await import('@/constants/mock-api-manuales');
-      return fakeManuales.getManuales(filters);
-    }
+    queryFn: () => getManuales(filters)
   });
 
   return (

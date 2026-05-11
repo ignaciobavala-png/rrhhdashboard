@@ -5,89 +5,70 @@ import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-h
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
-import type { Manual } from '@/constants/mock-api-manuales';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import type { Manual } from '@/features/manuales/api/types';
 
-const categoriaColors: Record<string, string> = {
-  RRHH: 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
-  Seguridad: 'bg-red-500/10 text-red-600 dark:text-red-400',
-  Calidad: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  Procesos: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  TI: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
-  Marketing: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  Ventas: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
-  Finanzas: 'bg-green-500/10 text-green-600 dark:text-green-400'
+const SIN_INFO = <span className='text-muted-foreground italic text-xs'>Sin información</span>;
+
+const areaColors: Record<string, string> = {
+  Comercial: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+  Administración: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
 };
 
 export const columns: ColumnDef<Manual>[] = [
   {
-    id: 'titulo',
-    accessorKey: 'titulo',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Título' />,
+    id: 'tarea',
+    accessorKey: 'tarea',
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Tarea / Procedimiento' />,
     cell: ({ cell }) => (
       <div className='flex items-center gap-2'>
-        <Icons.fileTypePdf className='text-muted-foreground h-4 w-4' />
-        <span className='font-medium'>{cell.getValue<string>()}</span>
+        <Icons.fileTypePdf className='text-muted-foreground h-4 w-4 shrink-0' />
+        <span className='font-medium line-clamp-2 max-w-xs'>{cell.getValue<string>()}</span>
       </div>
     ),
     enableColumnFilter: true,
-    meta: { label: 'Título', placeholder: 'Buscar...', variant: 'text' }
+    meta: { label: 'Tarea', placeholder: 'Buscar...', variant: 'text' }
   },
   {
-    id: 'descripcion',
-    accessorKey: 'descripcion',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Descripción' />,
-    cell: ({ cell }) => (
-      <p className='text-muted-foreground line-clamp-1 max-w-xs text-sm'>
-        {cell.getValue<string>()}
-      </p>
-    ),
-    enableColumnFilter: true,
-    meta: { label: 'Descripción', variant: 'text' }
-  },
-  {
-    id: 'categoria',
-    accessorKey: 'categoria',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Categoría' />,
+    id: 'area',
+    accessorKey: 'area',
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Área' />,
     cell: ({ cell }) => {
-      const cat = cell.getValue<string>();
+      const area = cell.getValue<string>();
       return (
-        <Badge variant='outline' className={categoriaColors[cat] ?? ''}>
-          {cat}
+        <Badge variant='outline' className={areaColors[area] ?? ''}>
+          {area}
         </Badge>
       );
     },
     enableColumnFilter: true,
-    meta: { label: 'Categoría', variant: 'text' }
+    meta: { label: 'Área', variant: 'text' }
   },
   {
-    id: 'version',
-    accessorKey: 'version',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Versión' />,
-    enableColumnFilter: true,
-    meta: { label: 'Versión', variant: 'text' }
-  },
-  {
-    id: 'autor',
-    accessorKey: 'autor',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Autor' />,
-    enableColumnFilter: true,
-    meta: { label: 'Autor', variant: 'text' }
-  },
-  {
-    id: 'fecha_actualizacion',
-    header: ({ column }) => <DataTableColumnHeader column={column} title='Actualizado' />,
-    accessorFn: (row) => format(new Date(row.fecha_actualizacion), 'dd/MM/yyyy', { locale: es }),
-    enableColumnFilter: true,
-    meta: { label: 'Actualizado', variant: 'text' }
+    id: 'link_manual',
+    accessorKey: 'link_manual',
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Manual' />,
+    cell: ({ cell }) => {
+      const link = cell.getValue<string | null>();
+      if (!link) return SIN_INFO;
+      return (
+        <span className='text-muted-foreground max-w-xs truncate text-xs' title={link}>
+          {link}
+        </span>
+      );
+    }
   },
   {
     id: 'actions',
-    cell: () => (
-      <Button variant='ghost' size='sm'>
-        <Icons.fileTypePdf className='mr-1 h-4 w-4' /> PDF
-      </Button>
-    )
+    cell: ({ row }) => {
+      const link = row.original.link_manual;
+      if (!link) return null;
+      return (
+        <Button variant='ghost' size='sm' asChild>
+          <a href={link} target='_blank' rel='noopener noreferrer'>
+            <Icons.fileTypePdf className='mr-1 h-4 w-4' /> Abrir
+          </a>
+        </Button>
+      );
+    }
   }
 ];

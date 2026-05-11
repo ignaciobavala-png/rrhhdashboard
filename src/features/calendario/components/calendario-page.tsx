@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   addMonths,
   subMonths,
@@ -19,7 +19,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { EventoDialog } from './evento-dialog';
-import type { EventoCalendario } from '@/constants/mock-api-calendario';
+type EventoCalendario = {
+  id: number;
+  fecha: string;
+  titulo: string;
+  tipo: 'licencia' | 'sueldo' | 'estudio' | 'ausencia';
+  empleado: string;
+  empleadoId: number;
+  descripcion?: string;
+};
 
 const tipoConfig: Record<string, { label: string; color: string; bg: string }> = {
   licencia: { label: 'Licencia', color: 'text-emerald-600', bg: 'bg-emerald-500' },
@@ -38,14 +46,7 @@ export default function CalendarioPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [editingEvento, setEditingEvento] = useState<EventoCalendario | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      const { fakeCalendario } = await import('@/constants/mock-api-calendario');
-      const data = await fakeCalendario.getEventosDelMes();
-      setEventos(data);
-    }
-    load();
-  }, []);
+  // Calendario sin datos hasta integrar vacaciones/ausentismo desde Supabase
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);

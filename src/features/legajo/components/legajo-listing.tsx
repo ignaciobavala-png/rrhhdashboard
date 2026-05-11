@@ -3,6 +3,7 @@ import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { Suspense } from 'react';
 import { LegajoTable, LegajoTableSkeleton } from './legajo-table';
+import { getEmpleados } from '../api/service';
 
 export default function LegajoListingPage() {
   const page = searchParamsCache.get('page');
@@ -15,10 +16,7 @@ export default function LegajoListingPage() {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery({
     queryKey: ['legajo', filters],
-    queryFn: async () => {
-      const { fakeLegajo } = await import('@/constants/mock-api-legajo');
-      return fakeLegajo.getEmpleados(filters);
-    }
+    queryFn: () => getEmpleados(filters)
   });
 
   return (

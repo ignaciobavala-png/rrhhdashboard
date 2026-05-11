@@ -3,6 +3,7 @@ import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { Suspense } from 'react';
 import { FlotaTable, FlotaTableSkeleton } from './flota-table';
+import { getLineasMoviles } from '../api/service';
 
 export default function FlotaListingPage() {
   const page = searchParamsCache.get('page');
@@ -14,10 +15,7 @@ export default function FlotaListingPage() {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery({
     queryKey: ['flota', filters],
-    queryFn: async () => {
-      const { fakeFlota } = await import('@/constants/mock-api-flota');
-      return fakeFlota.getCelulares(filters);
-    }
+    queryFn: () => getLineasMoviles(filters)
   });
 
   return (

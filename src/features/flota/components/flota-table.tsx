@@ -7,6 +7,7 @@ import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { columns } from './flota-table/columns';
+import { getLineasMoviles } from '../api/service';
 
 export function FlotaTable() {
   const [params] = useQueryStates({
@@ -23,10 +24,7 @@ export function FlotaTable() {
 
   const { data } = useSuspenseQuery({
     queryKey: ['flota', filters],
-    queryFn: async () => {
-      const { fakeFlota } = await import('@/constants/mock-api-flota');
-      return fakeFlota.getCelulares(filters);
-    }
+    queryFn: () => getLineasMoviles(filters)
   });
 
   const { table } = useDataTable({

@@ -1,67 +1,86 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+'use client';
 
-const employees = [
-  {
-    name: 'Martín Olivieri',
-    puesto: 'Desarrollador Senior',
-    avatar: 'https://api.slingacademy.com/public/sample-users/1.png',
-    fallback: 'MO',
-    evento: 'Licencia aprobada'
-  },
-  {
-    name: 'Laura Juárez',
-    puesto: 'Diseñadora UX',
-    avatar: 'https://api.slingacademy.com/public/sample-users/2.png',
-    fallback: 'LJ',
-    evento: 'Vacaciones solicitadas'
-  },
-  {
-    name: 'Ignacio Báez',
-    puesto: 'Project Manager',
-    avatar: 'https://api.slingacademy.com/public/sample-users/3.png',
-    fallback: 'IB',
-    evento: 'Ingreso registrado'
-  },
-  {
-    name: 'Camila Witt',
-    puesto: 'Contadora',
-    avatar: 'https://api.slingacademy.com/public/sample-users/4.png',
-    fallback: 'CW',
-    evento: 'Recibo de sueldo emitido'
-  },
-  {
-    name: 'Sofía Dávila',
-    puesto: 'RRHH',
-    avatar: 'https://api.slingacademy.com/public/sample-users/5.png',
-    fallback: 'SD',
-    evento: 'Nuevo empleado cargado'
-  }
-];
+import { useQuery } from '@tanstack/react-query';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/lib/supabase';
+
+function initials(nombreApellido: string): string {
+  const parts = nombreApellido.split(/[\s,]+/).filter(Boolean);
+  return parts
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase();
+}
 
 export function RecentSales() {
+  const { data: empleados = [], isLoading } = useQuery({
+    queryKey: ['overview', 'empleados-recientes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('empleados')
+        .select('id, nombre_apellido, equipo_ingreso, fecha_ingreso')
+        .eq('activo', true)
+        .order('fecha_ingreso', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data ?? [];
+    }
+  });
+
   return (
     <Card className='h-full'>
       <CardHeader>
-        <CardTitle>Actividad Reciente</CardTitle>
-        <CardDescription>12 novedades en las últimas 24 hs</CardDescription>
+        <CardTitle>Ingresos Recientes</CardTitle>
+        <CardDescription>Últimos empleados activos incorporados</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className='space-y-8'>
-          {employees.map((emp, index) => (
-            <div key={index} className='flex items-center'>
-              <Avatar className='h-9 w-9'>
-                <AvatarImage src={emp.avatar} alt='Avatar' />
-                <AvatarFallback>{emp.fallback}</AvatarFallback>
-              </Avatar>
-              <div className='ml-4 space-y-1'>
-                <p className='text-sm leading-none font-medium'>{emp.name}</p>
-                <p className='text-muted-foreground text-sm'>{emp.puesto}</p>
+        {isLoading ? (
+          <div className='space-y-4'>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className='flex items-center gap-3'>
+                <Skeleton className='h-9 w-9 rounded-full' />
+                <div className='space-y-1 flex-1'>
+                  <Skeleton className='h-3 w-32' />
+                  <Skeleton className='h-3 w-20' />
+                </div>
               </div>
-              <div className='ml-auto text-sm font-medium'>{emp.evento}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : empleados.length === 0 ? (
+          <p className='text-muted-foreground text-sm italic'>Sin información disponible.</p>
+        ) : (
+          <div className='space-y-6'>
+            {empleados.map((emp) => (
+              <div key={emp.id} className='flex items-center'>
+                <Avatar className='h-9 w-9'>
+                  <AvatarFallback className='text-xs'>
+                    {initials(emp.nombre_apellido)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className='ml-4 space-y-1'>
+                  <p className='text-sm leading-none font-medium'>{emp.nombre_apellido}</p>
+                  <p className='text-muted-foreground text-sm'>
+                    {emp.equipo_ingreso ?? <span className='italic'>Sin equipo</span>}
+                  </p>
+                </div>
+                <div className='ml-auto text-sm text-muted-foreground'>
+                  {emp.fecha_ingreso ? (
+                    new Date(emp.fecha_ingreso).toLocaleDateString('es-AR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: '2-digit'
+                    })
+                  ) : (
+                    <span className='italic'>Sin fecha</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

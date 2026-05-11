@@ -7,6 +7,7 @@ import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { columns } from './manuales-table/columns';
+import { getManuales } from '../api/service';
 
 export function ManualesTable() {
   const [params] = useQueryStates({
@@ -23,10 +24,7 @@ export function ManualesTable() {
 
   const { data } = useSuspenseQuery({
     queryKey: ['manuales', filters],
-    queryFn: async () => {
-      const { fakeManuales } = await import('@/constants/mock-api-manuales');
-      return fakeManuales.getManuales(filters);
-    }
+    queryFn: () => getManuales(filters)
   });
 
   const { table } = useDataTable({
