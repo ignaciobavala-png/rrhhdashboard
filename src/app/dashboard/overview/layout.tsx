@@ -37,7 +37,7 @@ export default async function OverViewLayout({
       .select('*', { count: 'exact', head: true })
       .eq('estado', 'asignado'),
     supabase.from('vacaciones').select('saldo_actual').eq('anio', 2025),
-    supabase.from('sueldos').select('monto, mes, anio').eq('moneda', 'PESOS ARG')
+    supabase.from('sueldos').select('monto, mes, anio, moneda')
   ]);
 
   const saldoVacTotal = (vacData ?? []).reduce((acc, v) => acc + (v.saldo_actual ?? 0), 0);
@@ -51,7 +51,7 @@ export default async function OverViewLayout({
     }
   }
   const masaSalarial = (sueldosData ?? [])
-    .filter((s) => s.anio === maxAnio && s.mes === maxMes)
+    .filter((s) => s.anio === maxAnio && s.mes === maxMes && s.moneda === 'PESOS ARG')
     .reduce((acc, s) => acc + (s.monto ?? 0), 0);
 
   return (
