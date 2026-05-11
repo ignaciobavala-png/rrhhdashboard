@@ -1,23 +1,17 @@
 import PageContainer from '@/components/layout/page-container';
+import { PayrollPage } from '@/features/payroll/components/payroll-page';
 
 export const metadata = {
   title: 'Dashboard: Salarios'
 };
 
-export default function PayrollPage() {
+export default function PayrollPageRoute() {
   return (
     <PageContainer
       pageTitle='Salarios'
-      pageDescription='Visualización y descarga de recibos de sueldo'
+      pageDescription='Histórico de sueldos mensuales por empleado'
     >
-      <div className='grid gap-4'>
-        <div className='bg-card text-card-foreground rounded-xl border p-6 shadow-sm'>
-          <p className='text-muted-foreground'>
-            Histórico de períodos salariales con desglose de haberes y descarga de recibos en PDF.
-            Próximamente.
-          </p>
-        </div>
-      </div>
+      <PayrollPage />
     </PageContainer>
   );
 }
