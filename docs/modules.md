@@ -209,6 +209,31 @@ src/app/dashboard/flota/page.tsx
 
 ---
 
+---
+
+## Base de Datos (Supabase)
+
+Migración inicial: `supabase/migrations/20260510_00001_schema_inicial.sql`
+
+**Esquema (8 tablas):**
+
+```
+empresas
+  ├── empleados            (Legajo Colaboradores.xlsx — Legajo)
+  │     ├── home_office_semanal    (Legajo Colaboradores.xlsx — HO)
+  │     ├── vacaciones             (Legajo Colaboradores.xlsx — Vacaciones 2025)
+  │     │     └── vacaciones_dias
+  │     ├── lineas_moviles         (Legajo Colaboradores.xlsx — Lineas Móviles)
+  │     └── sueldos                (💰Sueldos Contexto.xlsx)
+  └── manuales              (Listado de Manuales por Area.xlsx)
+```
+
+**RLS:** Todas las tablas tienen Row Level Security con aislamiento por `empresa_id`.
+
+**Archivos Excel originales:** `data-raw/`
+
+---
+
 ## Mock Data — todos los archivos
 
 | Archivo | Entidad | Cantidad |

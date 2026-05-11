@@ -53,10 +53,30 @@ Todos los módulos son placeholders con diseño listo.
 | `/dashboard/profile` | Perfil de Usuario | Placeholder |
 | `/dashboard/notifications` | Notificaciones | Funcional con mock data |
 
-## Arquitectura (Futura)
+## Base de Datos
 
-Supabase Auth → `usuarios` → `empresas` + `miembros` → RLS en todas las tablas.
-Cada empresa ve solo sus datos. Login clásico usuario/contraseña sin OAuth social.
+Migración inicial: `supabase/migrations/20260510_00001_schema_inicial.sql`
+
+### Tablas
+
+| Tabla | Origen Excel | Propósito |
+|-------|-------------|-----------|
+| `empresas` | — | Tenant multi-empresa |
+| `empleados` | `Legajo Colaboradores.xlsx` — Legajo | Datos personales + laborales |
+| `home_office_semanal` | `Legajo Colaboradores.xlsx` — HO | Modalidad semanal (Lu-Vi) |
+| `vacaciones` | `Legajo Colaboradores.xlsx` — Vacaciones 2025 | Saldos vacacionales |
+| `vacaciones_dias` | — | Detalle mensual de días usados |
+| `lineas_moviles` | `Legajo Colaboradores.xlsx` — Lineas Móviles | Flota de celulares |
+| `sueldos` | `💰Sueldos Contexto.xlsx` | Historial salarial mensual |
+| `manuales` | `Listado de Manuales por Area.xlsx` | Manuales por área |
+
+### RLS
+
+Todas las tablas tienen RLS habilitado con aislamiento por `empresa_id`. El tenant se define via `app.empresa_id` en la sesión.
+
+### Datos Raw
+
+Los archivos Excel originales están en `data-raw/` para referencia y migración futura.
 
 ## Cleanup Realizado
 
