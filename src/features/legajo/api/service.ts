@@ -80,16 +80,23 @@ export async function getEmpleadoDetalle(id: number): Promise<Empleado | null> {
 
 export function parseContactoEmergencia(raw: string | null): ContactoEmergencia | null {
   if (!raw) return null;
-  const parts = raw.split(' I ');
-  if (parts.length < 2) {
-    return { telefono: parts[0] ?? '', nombre: '', parentesco: '' };
-  }
+  // Formatos: "1131535679 I Sonia Madre" o "1140671718 Angela Madre"
+  const separador = raw.includes(' I ') ? ' I ' : ' ';
+  const parts = raw.split(separador);
+
   const telefono = parts[0].trim();
-  const resto = parts.slice(1).join(' I ').trim();
+
+  if (parts.length === 1) {
+    return { telefono, nombre: '', parentesco: '' };
+  }
+
+  const resto = parts.slice(1).join(separador).trim();
   const palabras = resto.split(/\s+/);
+
   if (palabras.length === 1) {
     return { telefono, nombre: '', parentesco: palabras[0] };
   }
+
   const parentesco = palabras[palabras.length - 1];
   const nombre = palabras.slice(0, -1).join(' ');
   return { telefono, nombre, parentesco };
