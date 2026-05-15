@@ -45,17 +45,39 @@ export async function getEmpleados(filters: EmpleadosFilters = {}): Promise<Empl
 
   query = query.range(offset, offset + limit - 1);
 
-  const { data, error, count } = await query;
+  const { data: empleados, error, count } = await query;
 
   if (error) throw new Error(error.message);
 
-  return { items: (data as Empleado[]) ?? [], total_items: count ?? 0 };
+  const { data: puestos } = await supabase.from('puestos').select('empleado_id, puesto');
+  const puestosMap = new Map((puestos ?? []).map((p) => [p.empleado_id, p.puesto]));
+
+  const items = (empleados ?? []).map((emp) => ({
+    ...emp,
+    puesto: puestosMap.get(emp.id) ?? null
+  }));
+
+  return { items: items as Empleado[], total_items: count ?? 0 };
 }
 
 export async function getEmpleadoById(id: number): Promise<Empleado | null> {
-  const { data, error } = await supabase.from('empleados').select('*').eq('id', id).single();
+  const { data: empleado, error } = await supabase
+    .from('empleados')
+    .select('*')
+    .eq('id', id)
+    .single();
   if (error) return null;
-  return data as Empleado;
+
+  const { data: puestoData } = await supabase
+    .from('puestos')
+    .select('puesto')
+    .eq('empleado_id', id)
+    .maybeSingle();
+
+  return {
+    ...empleado,
+    puesto: puestoData?.puesto ?? null
+  } as Empleado;
 }
 
 export async function getHomeOfficeEmpleado(empleadoId: number): Promise<HomeOfficeDia[]> {
@@ -123,11 +145,39 @@ export async function updateEmpleado(
       | 'movilidad'
       | 'modalidad'
       | 'contacto_emergencia'
+      | 'dni'
+      | 'equipo_ingreso'
+      | 'fecha_ingreso'
+      | 'nombre_apellido'
+      | 'activo'
     >
   >
 ) {
   const { error } = await supabase.from('empleados').update(updates).eq('id', id);
   if (error) throw new Error(error.message);
+}
+
+export async function upsertPuesto(empleadoId: number, puesto: string | null) {
+  if (puesto) {
+    const { data: existing } = await supabase
+      .from('puestos')
+      .select('id')
+      .eq('empleado_id', empleadoId)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('puestos')
+        .update({ puesto })
+        .eq('empleado_id', empleadoId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabase.from('puestos').insert({ empleado_id: empleadoId, puesto });
+      if (error) throw new Error(error.message);
+    }
+  } else {
+    await supabase.from('puestos').delete().eq('empleado_id', empleadoId);
+  }
 }
 
 export async function updateHomeOffice(id: number, modalidad: 'Presencial' | 'Remoto') {

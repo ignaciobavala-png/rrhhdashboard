@@ -1,5 +1,7 @@
 # Clerk Setup Guide
 
+> **Deprecado (May 2026):** Clerk fue removido del proyecto. El auth pendiente será con Supabase Auth. Este documento queda como referencia histórica.
+
 This guide covers the setup and configuration of Clerk features used in this starter template.
 
 ## Clerk Scopes Required

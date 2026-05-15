@@ -30,9 +30,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isValidTheme = THEMES.some((t) => t.value === activeThemeValue);
   const themeToApply = isValidTheme ? activeThemeValue! : DEFAULT_THEME;
+  const themeResolved = cookieStore.get('theme_resolved')?.value;
 
   return (
-    <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
+    <html
+      lang='en'
+      suppressHydrationWarning
+      data-theme={themeToApply}
+      className={themeResolved === 'dark' ? 'dark' : ''}
+    >
       <body
         className={cn(
           'bg-background overflow-x-hidden overscroll-none font-sans antialiased',
@@ -41,13 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       >
         <NextTopLoader color='var(--primary)' showSpinner={false} />
         <NuqsAdapter>
-          <ThemeProvider
-            attribute='class'
-            defaultTheme='system'
-            enableSystem
-            disableTransitionOnChange
-            enableColorScheme
-          >
+          <ThemeProvider>
             <ThemeColorUpdater />
             <Providers activeThemeValue={themeToApply}>
               <Toaster />

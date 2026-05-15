@@ -7,6 +7,7 @@ import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { columns } from './reuniones-table/columns';
+import { getReuniones } from '@/features/reuniones/api/service';
 
 export function ReunionesTable() {
   const [params] = useQueryStates({
@@ -23,7 +24,7 @@ export function ReunionesTable() {
 
   const { data } = useSuspenseQuery({
     queryKey: ['reuniones', filters],
-    queryFn: async () => ({ items: [], total_items: 0 })
+    queryFn: async () => getReuniones(filters)
   });
 
   const { table } = useDataTable({

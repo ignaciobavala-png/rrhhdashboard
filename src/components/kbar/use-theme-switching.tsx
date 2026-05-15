@@ -1,5 +1,5 @@
 import { useRegisterActions } from 'kbar';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/lib/theme-context';
 import { useThemeConfig } from '@/components/themes/active-theme';
 import { THEMES } from '@/components/themes/theme.config';
 

@@ -12,6 +12,7 @@ export type Empleado = {
   email: string | null;
   direccion: string | null;
   movilidad: string | null;
+  puesto: string | null;
   modalidad: 'presencial' | 'home_office' | 'hibrido';
   created_at: string;
   updated_at: string;

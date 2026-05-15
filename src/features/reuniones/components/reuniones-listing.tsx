@@ -3,6 +3,7 @@ import { getQueryClient } from '@/lib/query-client';
 import { searchParamsCache } from '@/lib/searchparams';
 import { Suspense } from 'react';
 import { ReunionesTable, ReunionesTableSkeleton } from './reuniones-table';
+import { getReuniones } from '@/features/reuniones/api/service';
 
 export default function ReunionesListingPage() {
   const page = searchParamsCache.get('page');
@@ -14,7 +15,7 @@ export default function ReunionesListingPage() {
   const queryClient = getQueryClient();
   void queryClient.prefetchQuery({
     queryKey: ['reuniones', filters],
-    queryFn: async () => ({ items: [], total_items: 0 })
+    queryFn: async () => getReuniones(filters)
   });
 
   return (

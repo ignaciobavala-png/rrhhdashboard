@@ -1,5 +1,7 @@
 # Adding New Themes
 
+> **Nota (May 2026):** El provider de temas es `ThemeProvider` desde `src/lib/theme-context.tsx` (custom), no `next-themes`. El API es compatible — `useTheme()` exporta `{ theme, resolvedTheme, setTheme }`. Todos los imports de `next-themes` fueron reemplazados por `@/lib/theme-context`.
+
 This guide explains how to add a new theme to the application. The theme system uses CSS custom properties with `[data-theme]` selectors for easy theme switching.
 
 ## The Journey: Adding a New Theme
@@ -466,7 +468,7 @@ All themes automatically support scaled variants. When a user selects "Theme Nam
 
 - Verify `.dark` selector is correct: `[data-theme='name'].dark`
 - Check that dark mode tokens are defined
-- Ensure `next-themes` is properly configured
+- Ensure `ThemeProvider` from `@/lib/theme-context` is properly configured
 
 ## Setting a Default Theme
 
@@ -590,6 +592,9 @@ export const fontVariables = cn(
 - **Complete theme example**: `src/styles/themes/claude.css`
 - **Theme aggregator**: `src/styles/theme.css`
 - **Theme selector component**: `src/components/themes/theme-selector.tsx`
-- **Theme provider**: `src/components/themes/active-theme.tsx`
+- **Theme provider**: `src/lib/theme-context.tsx` (custom, reemplaza next-themes)
+- **Active theme**: `src/components/themes/active-theme.tsx`
+- **Mode toggle**: `src/components/themes/theme-mode-toggle.tsx`
+- **Color updater**: `src/components/themes/theme-color-updater.tsx`
 - **Theme configuration** (includes default theme): `src/components/themes/theme.config.ts`
 - **Font configuration**: `src/components/themes/font.config.ts`

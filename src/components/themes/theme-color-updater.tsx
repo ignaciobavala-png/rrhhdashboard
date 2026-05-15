@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/lib/theme-context';
 
 const META_THEME_COLORS: Record<string, string> = {
   light: '#ffffff',

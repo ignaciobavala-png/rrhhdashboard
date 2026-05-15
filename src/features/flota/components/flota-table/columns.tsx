@@ -43,6 +43,23 @@ export const columns: ColumnDef<LineaMovil>[] = [
     meta: { label: 'Rol', placeholder: 'Buscar...', variant: 'text' }
   },
   {
+    id: 'empleado_nombre',
+    accessorKey: 'empleado_nombre',
+    header: ({ column }) => <DataTableColumnHeader column={column} title='Empleado' />,
+    cell: ({ row }) => {
+      const nombre = row.original.empleado_nombre;
+      if (!nombre) return <span className='text-muted-foreground text-xs'>Sin asignar</span>;
+      return (
+        <div className='flex items-center gap-2'>
+          <Icons.user className='text-muted-foreground h-4 w-4' />
+          <span className='text-sm font-medium'>{nombre}</span>
+        </div>
+      );
+    },
+    enableColumnFilter: true,
+    meta: { label: 'Empleado', variant: 'text' }
+  },
+  {
     id: 'usuario',
     accessorKey: 'usuario',
     header: ({ column }) => <DataTableColumnHeader column={column} title='Usuario' />,

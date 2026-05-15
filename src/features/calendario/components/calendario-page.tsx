@@ -160,6 +160,7 @@ export default function CalendarioPage() {
   const calStart = startOfWeek(monthStart);
   const calEnd = endOfWeek(monthEnd);
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
+  const numWeeks = Math.ceil(days.length / 7);
 
   const eventosDelMes = useMemo(() => {
     return allEventos.filter((e) => {
@@ -239,7 +240,7 @@ export default function CalendarioPage() {
   const totalVisible = eventosDelMes.length;
 
   return (
-    <div className='space-y-4'>
+    <div className='flex flex-1 flex-col space-y-4'>
       <div className='flex flex-wrap items-center gap-2'>
         {allTipos.map((tipo) => (
           <Badge
@@ -260,7 +261,7 @@ export default function CalendarioPage() {
         </div>
       </div>
 
-      <Card>
+      <Card className='flex min-h-0 flex-1 flex-col'>
         <CardHeader className='pb-2'>
           <div className='flex items-center justify-between'>
             <Button
@@ -282,7 +283,7 @@ export default function CalendarioPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className='p-0'>
+        <CardContent className='flex min-h-0 flex-1 flex-col p-0'>
           <div className='grid grid-cols-7 border-b'>
             {dayNames.map((name) => (
               <div
@@ -293,7 +294,10 @@ export default function CalendarioPage() {
               </div>
             ))}
           </div>
-          <div className='grid grid-cols-7'>
+          <div
+            className='grid min-h-0 flex-1 grid-cols-7'
+            style={{ gridTemplateRows: `repeat(${numWeeks}, minmax(0, 1fr))` }}
+          >
             {days.map((day) => {
               const key = format(day, 'yyyy-MM-dd');
               const dayEventos = eventosPorDia.get(key) ?? [];
@@ -306,12 +310,12 @@ export default function CalendarioPage() {
                   tabIndex={0}
                   onClick={() => handleDayClick(day)}
                   onKeyDown={(e) => handleDayKeyDown(e, day)}
-                  className={`min-h-24 cursor-pointer border-b border-r p-1 last:border-r-0 hover:bg-accent/50 ${
+                  className={`cursor-pointer border-b border-r p-1 last:border-r-0 hover:bg-accent/50 overflow-hidden ${
                     !isCurrentMonth ? 'bg-muted/50' : ''
                   } ${isToday(day) ? 'bg-accent/30' : ''}`}
                 >
                   <div
-                    className={`mb-1 flex items-center justify-between ${
+                    className={`mb-0.5 flex items-center justify-between ${
                       isToday(day)
                         ? 'bg-primary text-primary-foreground -mx-1 -mt-1 rounded-t-md px-1.5 pt-1'
                         : ''
@@ -329,7 +333,7 @@ export default function CalendarioPage() {
                     )}
                   </div>
                   <div className='space-y-0.5'>
-                    {dayEventos.slice(0, 3).map((ev) => (
+                    {dayEventos.slice(0, 2).map((ev) => (
                       <div
                         key={ev.id}
                         role='button'
@@ -341,15 +345,15 @@ export default function CalendarioPage() {
                             handleEventoClick(e, ev);
                           }
                         }}
-                        className={`${tipoConfig[ev.tipo]?.chip ?? 'bg-gray-500 text-white'} rounded px-1 py-0.5 text-[10px] leading-tight cursor-default`}
+                        className={`${tipoConfig[ev.tipo]?.chip ?? 'bg-gray-500 text-white'} rounded px-1 py-0.5 text-[10px] leading-tight cursor-default truncate`}
                         title={`${ev.empleado}: ${ev.titulo}`}
                       >
                         {ev.tipo === 'cumpleanos' ? `🎂 ${ev.empleado}` : ev.empleado}
                       </div>
                     ))}
-                    {dayEventos.length > 3 && (
+                    {dayEventos.length > 2 && (
                       <div className='text-muted-foreground text-[10px]'>
-                        +{dayEventos.length - 3} más
+                        +{dayEventos.length - 2} más
                       </div>
                     )}
                   </div>

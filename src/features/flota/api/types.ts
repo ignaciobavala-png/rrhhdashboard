@@ -2,6 +2,7 @@ export type LineaMovil = {
   id: number;
   empresa_id: number;
   empleado_id: number | null;
+  empleado_nombre: string | null;
   numero: string;
   rol: string | null;
   usuario: string | null;

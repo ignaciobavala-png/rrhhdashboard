@@ -82,7 +82,7 @@ function DataTableToolbarFilter<TData>({ column }: DataTableToolbarFilterProps<T
               placeholder={columnMeta.placeholder ?? columnMeta.label}
               value={(column.getFilterValue() as string) ?? ''}
               onChange={(event) => column.setFilterValue(event.target.value)}
-              className='h-8 w-40 lg:w-56'
+              className='h-8 w-28 lg:w-40'
             />
           );
 

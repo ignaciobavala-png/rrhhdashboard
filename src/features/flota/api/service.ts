@@ -7,7 +7,9 @@ export async function getLineasMoviles(
   const { page = 1, limit = 10, search } = filters;
   const offset = (page - 1) * limit;
 
-  let query = supabase.from('lineas_moviles').select('*', { count: 'exact' });
+  let query = supabase
+    .from('lineas_moviles')
+    .select('*, empleados(nombre_apellido)', { count: 'exact' });
 
   if (search) {
     query = query.or(
@@ -21,5 +23,10 @@ export async function getLineasMoviles(
 
   if (error) throw new Error(error.message);
 
-  return { items: (data as LineaMovil[]) ?? [], total_items: count ?? 0 };
+  const items = (data ?? []).map((linea) => ({
+    ...linea,
+    empleado_nombre: linea.empleados?.nombre_apellido ?? null
+  }));
+
+  return { items: items as LineaMovil[], total_items: count ?? 0 };
 }
