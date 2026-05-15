@@ -7,7 +7,7 @@
     "url": "https://petralabs.xyz"
   },
   "scripts": {
-    "dev": "node scripts/postinstall.js 2>/dev/null; next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint",
@@ -53,6 +53,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sentry/nextjs": "^10.45.0",
+    "@supabase/supabase-js": "^2.105.4",
     "@tabler/icons-react": "^3.40.0",
     "@tailwindcss/postcss": "^4.2.2",
     "@tanstack/react-form": "^1.28.5",
@@ -68,7 +69,7 @@
     "match-sorter": "^8.2.0",
     "motion": "^11.18.2",
     "next": "16.2.1",
-    "next-themes": "^0.4.6",
+    "next-themes": "1.0.0-beta.0",
     "nextjs-toploader": "^3.9.17",
     "nuqs": "^2.8.9",
     "postcss": "8.4.49",

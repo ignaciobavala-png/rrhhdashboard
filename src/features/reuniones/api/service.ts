@@ -1,0 +1,21 @@
+import { supabase } from '@/lib/supabase';
+import type { Reunion, ReunionesFilters, ReunionesResponse } from './types';
+
+export async function getReuniones(filters: ReunionesFilters = {}): Promise<ReunionesResponse> {
+  const { page = 1, limit = 10, search } = filters;
+  const offset = (page - 1) * limit;
+
+  let query = supabase.from('reuniones').select('*', { count: 'exact' });
+
+  if (search) {
+    query = query.or(`titulo.ilike.%${search}%,resumen.ilike.%${search}%`);
+  }
+
+  query = query.order('fecha', { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) throw new Error(error.message);
+
+  return { items: (data as Reunion[]) ?? [], total_items: count ?? 0 };
+}

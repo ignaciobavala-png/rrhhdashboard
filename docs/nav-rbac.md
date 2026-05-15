@@ -1,5 +1,7 @@
 # Simplified Navigation RBAC System
 
+> **Deprecado (May 2026):** Clerk fue removido del proyecto. La navegación actual es estática — todos los items visibles para todos los usuarios. Este documento queda como referencia para cuando se implemente Supabase Auth.
+
 ## Overview
 
 This document explains the fully client-side RBAC (Role-Based Access Control) system for navigation items.

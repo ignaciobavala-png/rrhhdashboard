@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { fontVariables } from '@/components/themes/font.config';
 import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
 import ThemeProvider from '@/components/themes/theme-provider';
+import { ThemeColorUpdater } from '@/components/themes/theme-color-updater';
 import { cn } from '@/lib/utils';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
@@ -29,23 +30,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const activeThemeValue = cookieStore.get('active_theme')?.value;
   const isValidTheme = THEMES.some((t) => t.value === activeThemeValue);
   const themeToApply = isValidTheme ? activeThemeValue! : DEFAULT_THEME;
+  const themeResolved = cookieStore.get('theme_resolved')?.value;
 
   return (
-    <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                // Set meta theme color
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '${META_THEME_COLORS.dark}')
-                }
-              } catch (_) {}
-            `
-          }}
-        />
-      </head>
+    <html
+      lang='en'
+      suppressHydrationWarning
+      data-theme={themeToApply}
+      className={themeResolved === 'dark' ? 'dark' : ''}
+    >
       <body
         className={cn(
           'bg-background overflow-x-hidden overscroll-none font-sans antialiased',
@@ -54,13 +47,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       >
         <NextTopLoader color='var(--primary)' showSpinner={false} />
         <NuqsAdapter>
-          <ThemeProvider
-            attribute='class'
-            defaultTheme='system'
-            enableSystem
-            disableTransitionOnChange
-            enableColorScheme
-          >
+          <ThemeProvider>
+            <ThemeColorUpdater />
             <Providers activeThemeValue={themeToApply}>
               <Toaster />
               {children}

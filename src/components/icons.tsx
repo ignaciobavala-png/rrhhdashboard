@@ -5,6 +5,7 @@ import {
   IconArrowRight,
   IconBell,
   IconBold,
+  IconBook2,
   IconBox,
   IconBrandGithub,
   IconBrandTwitter,
@@ -32,6 +33,7 @@ import {
   IconCommand,
   IconCreditCard,
   IconDeviceLaptop,
+  IconDeviceMobile,
   IconDots,
   IconDotsVertical,
   IconEdit,
@@ -44,6 +46,7 @@ import {
   IconFileTypeDoc,
   IconFileTypeXls,
   IconFileZip,
+  IconFiles,
   IconFolder,
   IconGripVertical,
   IconHelpCircle,
@@ -58,6 +61,7 @@ import {
   IconLogin,
   IconLogout,
   IconMessage,
+  IconMessage2,
   IconMinus,
   IconMoon,
   IconMusic,
@@ -236,5 +240,9 @@ export const Icons = {
   attendance: IconClipboardCheck,
   payroll: IconReceipt2,
   admin: IconUserShield,
-  building: IconBuilding
+  building: IconBuilding,
+  legajo: IconFiles,
+  meetings: IconMessage2,
+  manuals: IconBook2,
+  mobile: IconDeviceMobile
 };
