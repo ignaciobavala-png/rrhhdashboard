@@ -6,8 +6,8 @@ export type VacacionesDia = {
   anio: number;
   empleado_id: number;
   nombre_apellido: string;
-  fecha_inicio: string | null; // YYYY-MM-DD
-  fecha_fin: string | null; // YYYY-MM-DD
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
 };
 
 export type EmpleadoCumpleanos = {
@@ -18,11 +18,20 @@ export type EmpleadoCumpleanos = {
 
 export type EventoCalendario = {
   id: string;
-  fecha: string; // YYYY-MM-DD
+  fecha: string;
   titulo: string;
-  tipo: 'licencia' | 'estudio' | 'ausencia' | 'cumpleanos';
+  tipo: 'licencia' | 'estudio' | 'ausencia' | 'cumpleanos' | 'mudanza';
   empleado: string;
   empleadoId: number;
   descripcion?: string;
   readonly?: boolean;
+};
+
+export type EventoCalendarioRow = {
+  id: number;
+  empleado_id: number;
+  nombre_apellido: string;
+  tipo: string;
+  fecha: string;
+  descripcion: string | null;
 };

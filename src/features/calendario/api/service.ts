@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { VacacionesDia, EmpleadoCumpleanos } from './types';
+import type { VacacionesDia, EmpleadoCumpleanos, EventoCalendarioRow } from './types';
 
 export async function getVacacionesDias(): Promise<VacacionesDia[]> {
   const { data, error } = await supabase.rpc('get_vacaciones_calendario');
@@ -7,7 +7,6 @@ export async function getVacacionesDias(): Promise<VacacionesDia[]> {
     console.error('[calendario] vacaciones error:', error.message);
     return [];
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data ?? []).map((r: any) => ({
     id: r.id as number,
     mes: r.mes as number,
@@ -19,6 +18,15 @@ export async function getVacacionesDias(): Promise<VacacionesDia[]> {
     fecha_inicio: r.fecha_inicio as string | null,
     fecha_fin: r.fecha_fin as string | null
   }));
+}
+
+export async function getEventosCalendario(): Promise<EventoCalendarioRow[]> {
+  const { data, error } = await supabase.rpc('get_eventos_calendario');
+  if (error) {
+    console.error('[calendario] eventos error:', error.message);
+    return [];
+  }
+  return (data ?? []) as EventoCalendarioRow[];
 }
 
 export async function getEmpleadosCumpleanos(): Promise<EmpleadoCumpleanos[]> {
@@ -33,4 +41,36 @@ export async function getEmpleadosCumpleanos(): Promise<EmpleadoCumpleanos[]> {
     return [];
   }
   return (data ?? []) as EmpleadoCumpleanos[];
+}
+
+export async function getEmpleadosActivos(): Promise<EmpleadoCumpleanos[]> {
+  const { data, error } = await supabase
+    .from('empleados')
+    .select('id, nombre_apellido')
+    .eq('activo', true)
+    .order('nombre_apellido');
+  if (error) {
+    console.error('[calendario] empleados error:', error.message);
+    return [];
+  }
+  return (data ?? []) as EmpleadoCumpleanos[];
+}
+
+export async function registrarVacaciones(
+  empleado_id: number,
+  fecha_inicio: string,
+  fecha_fin: string,
+  periodo_anio: number
+) {
+  const { data, error } = await supabase.rpc('registrar_vacaciones', {
+    p_empleado_id: empleado_id,
+    p_fecha_inicio: fecha_inicio,
+    p_fecha_fin: fecha_fin,
+    p_periodo_anio: periodo_anio
+  });
+  if (error) {
+    console.error('[calendario] registrar vacaciones error:', error.message);
+    throw new Error(error.message);
+  }
+  return data;
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addMonths,
   subMonths,
@@ -22,18 +22,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
+import { toast } from 'sonner';
 import { EventoDialog } from './evento-dialog';
-import { getVacacionesDias, getEmpleadosCumpleanos } from '@/features/calendario/api/service';
+import { VacacionesDialog } from './vacaciones-dialog';
+import {
+  getVacacionesDias,
+  getEventosCalendario,
+  getEmpleadosCumpleanos,
+  getEmpleadosActivos,
+  registrarVacaciones
+} from '@/features/calendario/api/service';
 import type { EventoCalendario } from '@/features/calendario/api/types';
+import type { VacacionesFormValues } from '@/features/calendario/schemas/vacaciones';
 
 const tipoConfig: Record<string, { label: string; bg: string; chip: string }> = {
   licencia: { label: 'Vacaciones', bg: 'bg-emerald-500', chip: 'bg-emerald-500 text-white' },
   estudio: { label: 'Estudio', bg: 'bg-amber-500', chip: 'bg-amber-500 text-white' },
   ausencia: { label: 'Ausencia', bg: 'bg-red-500', chip: 'bg-red-500 text-white' },
-  cumpleanos: { label: 'Cumpleaños', bg: 'bg-purple-500', chip: 'bg-purple-500 text-white' }
+  cumpleanos: { label: 'Cumpleaños', bg: 'bg-purple-500', chip: 'bg-purple-500 text-white' },
+  mudanza: { label: 'Mudanza', bg: 'bg-sky-500', chip: 'bg-sky-500 text-white' }
 };
 
-const allTipos = ['licencia', 'estudio', 'ausencia', 'cumpleanos'] as const;
+const allTipos = ['licencia', 'estudio', 'ausencia', 'cumpleanos', 'mudanza'] as const;
 const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 function shortName(nombreApellido: string): string {
@@ -41,12 +51,14 @@ function shortName(nombreApellido: string): string {
 }
 
 export default function CalendarioPage() {
+  const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(new Date(2026, 4));
   const [selectedTipos, setSelectedTipos] = useState<Set<string>>(
-    new Set(['licencia', 'estudio', 'ausencia', 'cumpleanos'])
+    new Set(['licencia', 'estudio', 'ausencia', 'cumpleanos', 'mudanza'])
   );
   const [manualEventos, setManualEventos] = useState<EventoCalendario[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [vacDialogOpen, setVacDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [editingEvento, setEditingEvento] = useState<EventoCalendario | null>(null);
 
@@ -55,9 +67,19 @@ export default function CalendarioPage() {
     queryFn: getVacacionesDias
   });
 
+  const { data: eventosRows = [] } = useQuery({
+    queryKey: ['calendario', 'eventos'],
+    queryFn: getEventosCalendario
+  });
+
   const { data: empleados = [] } = useQuery({
     queryKey: ['calendario', 'cumpleanos'],
     queryFn: getEmpleadosCumpleanos
+  });
+
+  const { data: empleadosActivos = [] } = useQuery({
+    queryKey: ['calendario', 'empleados'],
+    queryFn: getEmpleadosActivos
   });
 
   const viewYear = getYear(currentMonth);
@@ -69,7 +91,6 @@ export default function CalendarioPage() {
       if (!vd.anio_uso) continue;
       const nombre = shortName(vd.nombre_apellido);
       if (vd.fecha_inicio && vd.fecha_fin) {
-        // Expand range: one event per day
         const start = parseISO(vd.fecha_inicio);
         const end = parseISO(vd.fecha_fin);
         let cur = start;
@@ -87,7 +108,6 @@ export default function CalendarioPage() {
           cur = addDays(cur, 1);
         }
       } else {
-        // Fallback: show on day 1 of month
         result.push({
           id: `vac-${vd.id}`,
           fecha: format(new Date(vd.anio_uso, vd.mes - 1, 1), 'yyyy-MM-dd'),
@@ -98,6 +118,18 @@ export default function CalendarioPage() {
           readonly: true
         });
       }
+    }
+
+    for (const ev of eventosRows) {
+      result.push({
+        id: `evento-${ev.id}`,
+        fecha: ev.fecha,
+        titulo: ev.descripcion ?? tipoConfig[ev.tipo]?.label ?? ev.tipo,
+        tipo: ev.tipo as EventoCalendario['tipo'],
+        empleado: shortName(ev.nombre_apellido),
+        empleadoId: ev.empleado_id,
+        readonly: true
+      });
     }
 
     for (const emp of empleados) {
@@ -116,7 +148,7 @@ export default function CalendarioPage() {
     }
 
     return result;
-  }, [vacDias, empleados, viewYear]);
+  }, [vacDias, eventosRows, empleados, viewYear]);
 
   const allEventos = useMemo(
     () => [...eventosBase, ...manualEventos],
@@ -161,7 +193,7 @@ export default function CalendarioPage() {
     setDialogOpen(true);
   };
 
-  const handleEventoClick = (e: React.MouseEvent, ev: EventoCalendario) => {
+  const handleEventoClick = (e: React.MouseEvent | React.KeyboardEvent, ev: EventoCalendario) => {
     e.stopPropagation();
     if (ev.readonly) return;
     setSelectedDate(new Date(ev.fecha.replace(/-/g, '/')));
@@ -190,6 +222,20 @@ export default function CalendarioPage() {
     setManualEventos((prev) => prev.filter((e) => e.id !== id));
   };
 
+  const handleRegistrarVacaciones = useCallback(
+    async (values: VacacionesFormValues) => {
+      await registrarVacaciones(
+        values.empleado_id,
+        values.fecha_inicio,
+        values.fecha_fin,
+        values.periodo_anio
+      );
+      toast.success('Vacaciones registradas correctamente');
+      queryClient.invalidateQueries({ queryKey: ['calendario'] });
+    },
+    [queryClient]
+  );
+
   const totalVisible = eventosDelMes.length;
 
   return (
@@ -205,9 +251,13 @@ export default function CalendarioPage() {
             {tipoConfig[tipo].label}
           </Badge>
         ))}
-        <span className='text-muted-foreground ml-auto text-xs'>
-          {totalVisible} eventos · clic en un día para agregar
-        </span>
+        <div className='ml-auto flex items-center gap-2'>
+          <span className='text-muted-foreground text-xs'>{totalVisible} eventos</span>
+          <Button size='sm' onClick={() => setVacDialogOpen(true)}>
+            <Icons.add className='mr-1 h-4 w-4' />
+            Vacaciones
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -282,12 +332,16 @@ export default function CalendarioPage() {
                     {dayEventos.slice(0, 3).map((ev) => (
                       <div
                         key={ev.id}
-                        role={ev.readonly ? undefined : 'button'}
-                        tabIndex={ev.readonly ? undefined : 0}
+                        role='button'
+                        tabIndex={-1}
                         onClick={(e) => handleEventoClick(e, ev)}
-                        className={`${tipoConfig[ev.tipo].chip} rounded px-1 py-0.5 text-[10px] leading-tight ${
-                          ev.readonly ? 'cursor-default' : 'cursor-pointer hover:opacity-80'
-                        }`}
+                        onKeyDown={(e: React.KeyboardEvent) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleEventoClick(e, ev);
+                          }
+                        }}
+                        className={`${tipoConfig[ev.tipo]?.chip ?? 'bg-gray-500 text-white'} rounded px-1 py-0.5 text-[10px] leading-tight cursor-default`}
                         title={`${ev.empleado}: ${ev.titulo}`}
                       >
                         {ev.tipo === 'cumpleanos' ? `🎂 ${ev.empleado}` : ev.empleado}
@@ -313,6 +367,13 @@ export default function CalendarioPage() {
         onSave={handleSave}
         onDelete={handleDelete}
         editingEvento={editingEvento}
+      />
+
+      <VacacionesDialog
+        open={vacDialogOpen}
+        onOpenChange={setVacDialogOpen}
+        empleados={empleadosActivos}
+        onSave={handleRegistrarVacaciones}
       />
     </div>
   );
