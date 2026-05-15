@@ -28,3 +28,22 @@ export type EmpleadosFilters = {
   search?: string;
   sort?: string;
 };
+
+export type ContactoEmergencia = {
+  telefono: string;
+  nombre: string;
+  parentesco: string;
+};
+
+export type HomeOfficeDia = {
+  id: number;
+  empleado_id: number;
+  dia_semana: string;
+  modalidad: 'Presencial' | 'Remoto';
+  fecha_desde: string;
+  fecha_hasta: string | null;
+};
+
+export type EmpleadoDetalle = Empleado & {
+  home_office: HomeOfficeDia[];
+};

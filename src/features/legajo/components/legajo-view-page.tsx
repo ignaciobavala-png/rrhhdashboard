@@ -1,12 +1,19 @@
 'use client';
 
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Icons } from '@/components/icons';
-import { getEmpleadoById } from '@/features/legajo/api/service';
+import { getEmpleadoById, getHomeOfficeEmpleado } from '@/features/legajo/api/service';
+import { SectionFechaNacimiento } from './sections/section-fecha-nacimiento';
+import { SectionCelular } from './sections/section-celular';
+import { SectionEmergencia } from './sections/section-emergencia';
+import { SectionPresencialidad } from './sections/section-presencialidad';
+import { SectionEmail } from './sections/section-email';
+import { SectionDireccion } from './sections/section-direccion';
+import { SectionMovilidad } from './sections/section-movilidad';
 
 const SIN_INFO = <span className='text-muted-foreground italic text-xs'>Sin información</span>;
 
@@ -21,26 +28,24 @@ function initials(nombre: string): string {
 }
 
 export default function LegajoViewPage({ empleadoId }: { empleadoId: string }) {
-  const { data: empleado } = useSuspenseQuery({
-    queryKey: ['legajo', empleadoId],
-    queryFn: () => getEmpleadoById(Number(empleadoId))
+  const queryClient = useQueryClient();
+  const id = Number(empleadoId);
+
+  const { data: empleado } = useQuery({
+    queryKey: ['legajo', id],
+    queryFn: () => getEmpleadoById(id)
+  });
+
+  const { data: homeOffice = [] } = useQuery({
+    queryKey: ['legajo', id, 'home_office'],
+    queryFn: () => getHomeOfficeEmpleado(id)
   });
 
   if (!empleado) notFound();
 
-  const modalidadLabel =
-    empleado.modalidad === 'home_office'
-      ? 'Home Office'
-      : empleado.modalidad === 'hibrido'
-        ? 'Híbrido'
-        : 'Presencial';
-
-  const modalidadClass =
-    empleado.modalidad === 'home_office'
-      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-      : empleado.modalidad === 'hibrido'
-        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-        : 'bg-blue-500/10 text-blue-600 dark:text-blue-400';
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['legajo', id] });
+  };
 
   return (
     <div className='space-y-6'>
@@ -64,77 +69,55 @@ export default function LegajoViewPage({ empleadoId }: { empleadoId: string }) {
         </div>
       </div>
 
-      <div className='grid gap-4 md:grid-cols-2'>
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-base'>
-              <Icons.user className='h-4 w-4' /> Datos Personales
-            </CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-3 text-sm'>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>DNI</span>
-              <span>{empleado.dni ?? SIN_INFO}</span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Email</span>
-              <span>{empleado.email ?? SIN_INFO}</span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Celular</span>
-              <span>{empleado.celular ?? SIN_INFO}</span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Dirección</span>
-              <span>{empleado.direccion ?? SIN_INFO}</span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Fecha de Nacimiento</span>
-              <span>
-                {empleado.fecha_nacimiento
-                  ? new Date(empleado.fecha_nacimiento).toLocaleDateString('es-AR')
-                  : SIN_INFO}
-              </span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Contacto emergencia</span>
-              <span>{empleado.contacto_emergencia ?? SIN_INFO}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className='flex items-center gap-2 text-base'>
-              <Icons.building className='h-4 w-4' /> Datos Laborales
-            </CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-3 text-sm'>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Equipo</span>
-              <span>{empleado.equipo_ingreso ?? SIN_INFO}</span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Fecha de Ingreso</span>
-              <span>
-                {empleado.fecha_ingreso
-                  ? new Date(empleado.fecha_ingreso).toLocaleDateString('es-AR')
-                  : SIN_INFO}
-              </span>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Modalidad</span>
-              <Badge variant='outline' className={modalidadClass}>
-                {modalidadLabel}
-              </Badge>
-            </div>
-            <div className='flex justify-between'>
-              <span className='text-muted-foreground'>Movilidad</span>
-              <span>{empleado.movilidad ?? SIN_INFO}</span>
-            </div>
-          </CardContent>
-        </Card>
+      <div className='grid gap-4 md:grid-cols-3'>
+        <SectionFechaNacimiento empleadoId={id} fechaNacimiento={empleado.fecha_nacimiento} />
+        <SectionCelular empleadoId={id} celular={empleado.celular} />
+        <SectionEmergencia empleadoId={id} contactoEmergencia={empleado.contacto_emergencia} />
       </div>
+
+      <div className='grid gap-4 md:grid-cols-1'>
+        <SectionEmail empleadoId={id} email={empleado.email} />
+      </div>
+
+      <div className='grid gap-4 md:grid-cols-2'>
+        <SectionDireccion empleadoId={id} direccion={empleado.direccion} />
+        <SectionPresencialidad
+          empleadoId={id}
+          modalidad={empleado.modalidad}
+          homeOffice={homeOffice}
+          onDataChange={refresh}
+        />
+      </div>
+
+      <div className='grid gap-4 md:grid-cols-1'>
+        <SectionMovilidad empleadoId={id} movilidad={empleado.movilidad} />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2 text-base'>
+            <Icons.building className='h-4 w-4' /> Datos Laborales
+          </CardTitle>
+        </CardHeader>
+        <CardContent className='space-y-3 text-sm'>
+          <div className='flex justify-between'>
+            <span className='text-muted-foreground'>DNI</span>
+            <span>{empleado.dni ?? SIN_INFO}</span>
+          </div>
+          <div className='flex justify-between'>
+            <span className='text-muted-foreground'>Equipo</span>
+            <span>{empleado.equipo_ingreso ?? SIN_INFO}</span>
+          </div>
+          <div className='flex justify-between'>
+            <span className='text-muted-foreground'>Fecha de Ingreso</span>
+            <span>
+              {empleado.fecha_ingreso
+                ? new Date(empleado.fecha_ingreso).toLocaleDateString('es-AR')
+                : SIN_INFO}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
