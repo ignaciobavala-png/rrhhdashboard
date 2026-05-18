@@ -34,12 +34,15 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Talento',
-        url: '/dashboard/talent',
+        title: 'People',
+        url: '/dashboard/people',
         icon: 'talent',
         isActive: false,
         shortcut: ['t', 't'],
-        items: []
+        items: [
+          { title: 'Reuniones', url: '/dashboard/people/reuniones', shortcut: ['r', 'r'] },
+          { title: 'Manuales', url: '/dashboard/people/manuales', shortcut: ['m', 'm'] }
+        ]
       },
       {
         title: 'Sueldos',
@@ -54,22 +57,6 @@ export const navGroups: NavGroup[] = [
   {
     label: 'Administración',
     items: [
-      {
-        title: 'Reuniones',
-        url: '/dashboard/reuniones',
-        icon: 'meetings',
-        isActive: false,
-        shortcut: ['r', 'r'],
-        items: []
-      },
-      {
-        title: 'Manuales',
-        url: '/dashboard/manuales',
-        icon: 'manuals',
-        isActive: false,
-        shortcut: ['m', 'm'],
-        items: []
-      },
       {
         title: 'Flota Celulares',
         url: '/dashboard/flota',

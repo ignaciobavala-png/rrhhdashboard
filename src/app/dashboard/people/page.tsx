@@ -3,24 +3,24 @@ import { buttonVariants } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import TalentListingPage from '@/features/talent/components/talent-listing';
+import PeopleListingPage from '@/features/people/components/people-listing';
 
 export const metadata = {
-  title: 'Dashboard: Gestión de Talento'
+  title: 'Dashboard: People'
 };
 
-export default function TalentPage() {
+export default function PeoplePage() {
   return (
     <PageContainer
-      pageTitle='Gestión de Talento'
+      pageTitle='People'
       pageDescription='Evaluaciones, objetivos y seguimiento de talento'
       pageHeaderAction={
-        <Link href='/dashboard/talent/new' className={cn(buttonVariants(), 'text-xs md:text-sm')}>
+        <Link href='/dashboard/people/new' className={cn(buttonVariants(), 'text-xs md:text-sm')}>
           <Icons.add className='mr-2 h-4 w-4' /> Nuevo Empleado
         </Link>
       }
     >
-      <TalentListingPage />
+      <PeopleListingPage />
     </PageContainer>
   );
 }

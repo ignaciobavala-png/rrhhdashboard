@@ -4,6 +4,14 @@ import { withSentryConfig } from '@sentry/nextjs';
 // Define the base Next.js configuration
 const baseConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  async redirects() {
+    return [
+      { source: '/dashboard/talent', destination: '/dashboard/people', permanent: true },
+      { source: '/dashboard/talent/:path*', destination: '/dashboard/people/:path*', permanent: true },
+      { source: '/dashboard/reuniones', destination: '/dashboard/people/reuniones', permanent: true },
+      { source: '/dashboard/manuales', destination: '/dashboard/people/manuales', permanent: true }
+    ];
+  },
   allowedDevOrigins: ['*.trycloudflare.com'],
   images: {
     remotePatterns: [

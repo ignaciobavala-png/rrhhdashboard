@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 
-export default function TalentListingPage() {
+export default function PeopleListingPage() {
   return (
     <div className='grid gap-6 md:grid-cols-2'>
       <Card>

@@ -15,7 +15,7 @@ export default function NewEmployeePage() {
       pageDescription='Registrar un nuevo empleado en el sistema'
       pageHeaderAction={
         <Link
-          href='/dashboard/talent'
+          href='/dashboard/people'
           className={cn(buttonVariants({ variant: 'outline' }), 'text-xs md:text-sm')}
         >
           <Icons.chevronLeft className='mr-2 h-4 w-4' /> Volver

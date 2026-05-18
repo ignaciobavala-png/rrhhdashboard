@@ -17,7 +17,7 @@ export default async function EmployeeProfilePage(props: { params: Promise<{ id:
       pageDescription={`Información detallada del empleado ${id}`}
       pageHeaderAction={
         <Link
-          href='/dashboard/talent'
+          href='/dashboard/people'
           className={cn(buttonVariants({ variant: 'outline' }), 'text-xs md:text-sm')}
         >
           <Icons.chevronLeft className='mr-2 h-4 w-4' /> Volver
