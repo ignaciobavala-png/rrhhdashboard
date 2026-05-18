@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { Manual, TipoArchivo } from '@/features/manuales/api/types';
 import { deleteManual, formatTamanio, getDownloadUrl } from '@/features/manuales/api/service';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,6 +21,8 @@ const tipoIcon: Record<TipoArchivo, React.ReactNode> = {
 function ActionsCell({ row }: { row: { original: Manual } }) {
   const queryClient = useQueryClient();
   const manual = row.original;
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleDownload = () => {
     if (!manual.storage_path) return;
@@ -30,13 +34,16 @@ function ActionsCell({ row }: { row: { original: Manual } }) {
   };
 
   const handleDelete = async () => {
-    if (!confirm(`¿Eliminar "${manual.tarea}"?`)) return;
+    setLoading(true);
     try {
       await deleteManual(manual);
+      setOpen(false);
       toast.success('Manual eliminado');
       queryClient.invalidateQueries({ queryKey: ['manuales'] });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al eliminar');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,11 +62,21 @@ function ActionsCell({ row }: { row: { original: Manual } }) {
         variant='ghost'
         size='icon'
         className='h-8 w-8 text-destructive hover:text-destructive'
-        onClick={handleDelete}
+        onClick={() => setOpen(true)}
         title='Eliminar'
       >
         <Icons.trash className='h-4 w-4' />
       </Button>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title='¿Eliminar manual?'
+        description={`Se eliminará "${manual.tarea}" y su archivo del servidor. Esta acción no se puede deshacer.`}
+        confirmLabel='Eliminar'
+        onConfirm={handleDelete}
+        loading={loading}
+        destructive
+      />
     </div>
   );
 }

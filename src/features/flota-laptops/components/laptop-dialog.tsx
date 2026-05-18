@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { createLaptop } from '../api/service';
+import { showUndoToast } from '@/lib/undo-toast';
+import { createLaptop, deleteLaptop } from '../api/service';
 import type { LaptopInput } from '../api/types';
 
 const EMPTY: LaptopInput = {
@@ -50,10 +51,13 @@ export function LaptopDialog({ open, onOpenChange }: LaptopDialogProps) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await createLaptop(form);
-      toast.success('Laptop registrada correctamente');
+      const { id } = await createLaptop(form);
       queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
       handleClose();
+      showUndoToast('Laptop registrada correctamente', async () => {
+        await deleteLaptop(id);
+        queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
+      });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al guardar');
     } finally {

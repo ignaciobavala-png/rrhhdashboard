@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undo-toast';
 import { columns } from './legajo-table/columns';
 import { getEmpleados, updateEmpleado, upsertPuesto } from '../api/service';
 import type { Empleado } from '../api/types';
@@ -74,21 +75,32 @@ export function LegajoTable() {
       'activo',
       'contacto_emergencia'
     ];
+    const original = data.items.find((e: Empleado) => e.id === editingId);
     const toUpdate: Record<string, unknown> = {};
     for (const f of fields) {
       if (f in editData) {
         toUpdate[f] = editData[f] === '' ? null : editData[f];
       }
     }
+    const originalPuesto = original?.puesto;
     try {
       await updateEmpleado(editingId, toUpdate as Parameters<typeof updateEmpleado>[1]);
       if ('puesto' in editData) {
         await upsertPuesto(editingId, editData.puesto ?? null);
       }
-      toast.success('Empleado actualizado');
       queryClient.invalidateQueries({ queryKey: ['legajo'] });
+      const id = editingId;
       setEditingId(null);
       setEditData({});
+      showUndoToast('Empleado actualizado', async () => {
+        if (original) {
+          const revert: Record<string, unknown> = {};
+          for (const f of fields) revert[f] = original[f] ?? null;
+          await updateEmpleado(id, revert as Parameters<typeof updateEmpleado>[1]);
+          await upsertPuesto(id, originalPuesto ?? null);
+          queryClient.invalidateQueries({ queryKey: ['legajo'] });
+        }
+      });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al actualizar');
     }

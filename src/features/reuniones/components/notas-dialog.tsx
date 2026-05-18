@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undo-toast';
 import { updateReunion } from '@/features/reuniones/api/service';
 import type { Reunion } from '@/features/reuniones/api/types';
 import { format } from 'date-fns';
@@ -34,12 +35,20 @@ export function NotasDialog({ open, onOpenChange, reunion }: NotasDialogProps) {
   }, [reunion, open]);
 
   const mutation = useMutation({
-    mutationFn: () => updateReunion(reunion!.id, { resumen: resumen.trim() || null }),
-    onSuccess: () => {
-      toast.success('Anotaciones guardadas');
+    mutationFn: async () => {
+      const prevResumen = reunion!.resumen;
+      await updateReunion(reunion!.id, { resumen: resumen.trim() || null });
+      return { id: reunion!.id, prevResumen };
+    },
+    onSuccess: ({ id, prevResumen }) => {
       queryClient.invalidateQueries({ queryKey: ['reuniones'] });
       queryClient.invalidateQueries({ queryKey: ['calendario', 'reuniones'] });
       onOpenChange(false);
+      showUndoToast('Anotaciones guardadas', async () => {
+        await updateReunion(id, { resumen: prevResumen });
+        queryClient.invalidateQueries({ queryKey: ['reuniones'] });
+        queryClient.invalidateQueries({ queryKey: ['calendario', 'reuniones'] });
+      });
     },
     onError: () => toast.error('Error al guardar')
   });

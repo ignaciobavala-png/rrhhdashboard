@@ -21,8 +21,7 @@ export async function getManuales(): Promise<Manual[]> {
   return (data ?? []) as Manual[];
 }
 
-export async function uploadManual({ file, tarea, area }: ManualUploadInput): Promise<void> {
-  const ext = file.name.split('.').pop() ?? '';
+export async function uploadManual({ file, tarea, area }: ManualUploadInput): Promise<Manual> {
   const storagePath = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
   const tipo = detectTipo(file);
 
@@ -32,20 +31,26 @@ export async function uploadManual({ file, tarea, area }: ManualUploadInput): Pr
 
   if (uploadError) throw new Error(uploadError.message);
 
-  const { error: dbError } = await supabase.from('manuales').insert({
-    empresa_id: 1,
-    tarea,
-    area,
-    storage_path: storagePath,
-    nombre_archivo: file.name,
-    tipo_archivo: tipo,
-    tamanio: file.size
-  });
+  const { data, error: dbError } = await supabase
+    .from('manuales')
+    .insert({
+      empresa_id: 1,
+      tarea,
+      area,
+      storage_path: storagePath,
+      nombre_archivo: file.name,
+      tipo_archivo: tipo,
+      tamanio: file.size
+    })
+    .select('*')
+    .single();
 
   if (dbError) {
     await supabase.storage.from(BUCKET).remove([storagePath]);
     throw new Error(dbError.message);
   }
+
+  return data as Manual;
 }
 
 export async function deleteManual(manual: Manual): Promise<void> {

@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
-import { uploadManual } from '../api/service';
+import { showUndoToast } from '@/lib/undo-toast';
+import { uploadManual, deleteManual } from '../api/service';
 
 const ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx';
 const ACCEPT_MIME = [
@@ -55,13 +56,20 @@ export function ManualUploader() {
     }
     setLoading(true);
     try {
-      await uploadManual({ file, tarea: tarea.trim(), area: area.trim() || 'General' });
-      toast.success('Manual subido correctamente');
+      const manual = await uploadManual({
+        file,
+        tarea: tarea.trim(),
+        area: area.trim() || 'General'
+      });
       queryClient.invalidateQueries({ queryKey: ['manuales'] });
       setFile(null);
       setTarea('');
       setArea('');
       if (inputRef.current) inputRef.current.value = '';
+      showUndoToast('Manual subido correctamente', async () => {
+        await deleteManual(manual);
+        queryClient.invalidateQueries({ queryKey: ['manuales'] });
+      });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al subir el manual');
     } finally {

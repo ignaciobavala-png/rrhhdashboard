@@ -29,19 +29,24 @@ export async function getLaptops(filters: LaptopsFilters = {}): Promise<LaptopsR
   return { items: items as Laptop[], total_items: count ?? 0 };
 }
 
-export async function createLaptop(input: LaptopInput): Promise<void> {
-  const { error } = await supabase.from('flota_laptops').insert({
-    empresa_id: 1,
-    marca: input.marca || null,
-    modelo: input.modelo || null,
-    numero_serie: input.numero_serie || null,
-    usuario: input.usuario || null,
-    equipo: input.equipo || null,
-    ubicacion: input.ubicacion || null,
-    comentarios: input.comentarios || null,
-    estado: input.estado
-  });
+export async function createLaptop(input: LaptopInput): Promise<{ id: number }> {
+  const { data, error } = await supabase
+    .from('flota_laptops')
+    .insert({
+      empresa_id: 1,
+      marca: input.marca || null,
+      modelo: input.modelo || null,
+      numero_serie: input.numero_serie || null,
+      usuario: input.usuario || null,
+      equipo: input.equipo || null,
+      ubicacion: input.ubicacion || null,
+      comentarios: input.comentarios || null,
+      estado: input.estado
+    })
+    .select('id')
+    .single();
   if (error) throw new Error(error.message);
+  return data as { id: number };
 }
 
 export async function deleteLaptop(id: number): Promise<void> {

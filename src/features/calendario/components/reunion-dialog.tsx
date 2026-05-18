@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undo-toast';
 import { createReunion, updateReunion, deleteReunion } from '@/features/reuniones/api/service';
 import type { Reunion } from '@/features/reuniones/api/types';
 
@@ -96,24 +97,59 @@ export function ReunionDialog({ open, onOpenChange, fecha, editingReunion }: Reu
         empresa_id: 1
       };
       if (editingReunion) {
-        return updateReunion(editingReunion.id, payload);
+        const prev = { ...editingReunion };
+        const updated = await updateReunion(editingReunion.id, payload);
+        return { type: 'update' as const, updated, prev };
       }
-      return createReunion(payload);
+      const created = await createReunion(payload);
+      return { type: 'create' as const, created };
     },
-    onSuccess: () => {
-      toast.success(editingReunion ? 'Reunión actualizada' : 'Reunión creada');
+    onSuccess: (result) => {
       invalidate();
       onOpenChange(false);
+      if (result.type === 'create') {
+        showUndoToast('Reunión creada', async () => {
+          await deleteReunion(result.created.id);
+          invalidate();
+        });
+      } else {
+        showUndoToast('Reunión actualizada', async () => {
+          await updateReunion(result.prev.id, {
+            titulo: result.prev.titulo,
+            fecha: result.prev.fecha,
+            hora: result.prev.hora,
+            duracion: result.prev.duracion,
+            participantes: result.prev.participantes,
+            resumen: result.prev.resumen
+          });
+          invalidate();
+        });
+      }
     },
     onError: () => toast.error('Error al guardar la reunión')
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => deleteReunion(editingReunion!.id),
-    onSuccess: () => {
-      toast.success('Reunión eliminada');
+    mutationFn: async () => {
+      const saved = { ...editingReunion! };
+      await deleteReunion(editingReunion!.id);
+      return saved;
+    },
+    onSuccess: (saved) => {
       invalidate();
       onOpenChange(false);
+      showUndoToast('Reunión eliminada', async () => {
+        await createReunion({
+          titulo: saved.titulo,
+          fecha: saved.fecha,
+          hora: saved.hora,
+          duracion: saved.duracion,
+          participantes: saved.participantes,
+          resumen: saved.resumen,
+          empresa_id: saved.empresa_id
+        });
+        invalidate();
+      });
     },
     onError: () => toast.error('Error al eliminar la reunión')
   });

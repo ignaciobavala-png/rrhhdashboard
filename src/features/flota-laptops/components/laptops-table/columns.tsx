@@ -1,14 +1,17 @@
 'use client';
 
+import { useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undo-toast';
 import type { Laptop } from '@/features/flota-laptops/api/types';
-import { deleteLaptop } from '@/features/flota-laptops/api/service';
+import { createLaptop, deleteLaptop } from '@/features/flota-laptops/api/service';
 
 const SIN_INFO = <span className='text-muted-foreground italic text-xs'>—</span>;
 
@@ -26,28 +29,61 @@ const estadoLabels: Record<string, string> = {
 
 function DeleteCell({ laptop }: { laptop: Laptop }) {
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleDelete = async () => {
-    if (!confirm(`¿Eliminar laptop ${laptop.marca ?? ''} ${laptop.modelo ?? ''}?`)) return;
+  const handleConfirm = async () => {
+    setLoading(true);
     try {
+      const saved = { ...laptop };
       await deleteLaptop(laptop.id);
-      toast.success('Laptop eliminada');
+      setOpen(false);
       queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
+      showUndoToast(
+        `Laptop eliminada: ${saved.marca ?? ''} ${saved.modelo ?? ''}`.trim() || 'Laptop eliminada',
+        async () => {
+          await createLaptop({
+            marca: saved.marca ?? '',
+            modelo: saved.modelo ?? '',
+            numero_serie: saved.numero_serie ?? '',
+            usuario: saved.usuario ?? '',
+            equipo: saved.equipo ?? '',
+            ubicacion: saved.ubicacion ?? '',
+            comentarios: saved.comentarios ?? '',
+            estado: saved.estado
+          });
+          queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
+        }
+      );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al eliminar');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Button
-      variant='ghost'
-      size='icon'
-      className='h-8 w-8 text-destructive hover:text-destructive'
-      onClick={handleDelete}
-      title='Eliminar'
-    >
-      <Icons.trash className='h-4 w-4' />
-    </Button>
+    <>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-8 w-8 text-destructive hover:text-destructive'
+        onClick={() => setOpen(true)}
+        title='Eliminar'
+      >
+        <Icons.trash className='h-4 w-4' />
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title='¿Eliminar laptop?'
+        description={`Se eliminará "${[laptop.marca, laptop.modelo].filter(Boolean).join(' ') || laptop.numero_serie || 'esta laptop'}". Podés deshacer el cambio durante 10 segundos.`}
+        confirmLabel='Eliminar'
+        onConfirm={handleConfirm}
+        loading={loading}
+        destructive
+      />
+    </>
   );
 }
 
