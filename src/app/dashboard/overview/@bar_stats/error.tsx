@@ -6,27 +6,27 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Icons } from '@/components/icons';
 import { useRouter } from 'next/navigation';
 import { useEffect, useTransition } from 'react';
-import * as Sentry from '@sentry/nextjs';
 
 interface StatsErrorProps {
   error: Error;
-  reset: () => void; // Add reset function from error boundary
+  reset: () => void;
 }
+
 export default function StatsError({ error, reset }: StatsErrorProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    Sentry.captureException(error);
+    console.error(error);
   }, [error]);
 
-  // the reload fn ensures the refresh is deffered  until the next render phase allowing react to handle any pending states before processing
   const reload = () => {
     startTransition(() => {
       router.refresh();
       reset();
     });
   };
+
   return (
     <Card className='border-red-500'>
       <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row'>
@@ -35,7 +35,7 @@ export default function StatsError({ error, reset }: StatsErrorProps) {
             <Icons.alertCircle className='h-4 w-4' />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription className='mt-2'>
-              Failed to load statistics: {error.message}
+              No se pudieron cargar las estadísticas: {error.message}
             </AlertDescription>
           </Alert>
         </div>
@@ -43,15 +43,10 @@ export default function StatsError({ error, reset }: StatsErrorProps) {
       <CardContent className='flex h-[316px] items-center justify-center p-6'>
         <div className='text-center'>
           <p className='text-muted-foreground mb-4 text-sm'>
-            Unable to display statistics at this time
+            No se pueden mostrar las estadísticas.
           </p>
-          <Button
-            onClick={() => reload()}
-            variant='outline'
-            className='min-w-[120px]'
-            disabled={isPending}
-          >
-            Try again
+          <Button onClick={reload} variant='outline' className='min-w-[120px]' disabled={isPending}>
+            Reintentar
           </Button>
         </div>
       </CardContent>
