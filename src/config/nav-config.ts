@@ -79,14 +79,6 @@ export const navGroups: NavGroup[] = [
     label: 'Configuración',
     items: [
       {
-        title: 'Admin Center',
-        url: '/dashboard/admin',
-        icon: 'admin',
-        isActive: false,
-        shortcut: ['a', 'a'],
-        items: []
-      },
-      {
         title: 'Perfil',
         url: '/dashboard/profile',
         icon: 'profile',
