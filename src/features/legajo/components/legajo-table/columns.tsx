@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Icons } from '@/components/icons';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import type { Empleado } from '@/features/legajo/api/types';
+import { parseContactoEmergencia } from '@/features/legajo/api/service';
 
 const SIN_INFO = (
   <span className='text-muted-foreground italic text-xs'>Sin informaci&oacute;n</span>
@@ -284,15 +285,19 @@ export const columns: ColumnDef<Empleado>[] = [
       }
       const contacto = row.original.contacto_emergencia;
       if (!contacto) return SIN_INFO;
-      const match = contacto.match(/^(\d+)\s*(?:I\s+)?(\w+)\s+(\w+)$/);
-      if (match) {
+      const parsed = parseContactoEmergencia(contacto);
+      if (parsed) {
         return (
           <span className='text-xs'>
-            {match[2]} <span className='text-muted-foreground'>({match[3]})</span>
+            {parsed.telefono && <span className='font-medium'>{parsed.telefono}</span>}
+            {parsed.nombre && <span className='text-muted-foreground'> · {parsed.nombre}</span>}
+            {parsed.parentesco && (
+              <span className='text-muted-foreground'> ({parsed.parentesco})</span>
+            )}
           </span>
         );
       }
-      return <span className='text-xs truncate max-w-[100px]'>{contacto}</span>;
+      return <span className='text-xs truncate max-w-[120px]'>{contacto}</span>;
     },
     enableColumnFilter: false,
     meta: { label: 'Emergencia', variant: 'text' }

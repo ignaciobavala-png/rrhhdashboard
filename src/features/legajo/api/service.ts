@@ -102,25 +102,37 @@ export async function getEmpleadoDetalle(id: number): Promise<Empleado | null> {
 
 export function parseContactoEmergencia(raw: string | null): ContactoEmergencia | null {
   if (!raw) return null;
-  // Formatos: "1131535679 I Sonia Madre" o "1140671718 Angela Madre"
-  const separador = raw.includes(' I ') ? ' I ' : ' ';
-  const parts = raw.split(separador);
 
-  const telefono = parts[0].trim();
-
-  if (parts.length === 1) {
-    return { telefono, nombre: '', parentesco: '' };
+  // Formato "PHONE I Nombre Parentesco": ' I ' separa teléfono de nombre/relación
+  // Solo si lo que precede al ' I ' es un teléfono puro (dígitos, espacios, (), +, -)
+  const iIdx = raw.indexOf(' I ');
+  if (iIdx !== -1) {
+    const beforeI = raw.slice(0, iIdx).trim();
+    if (/^[\d\s()+\-]+$/.test(beforeI)) {
+      const telefono = beforeI.replace(/\s+/g, ' ').trim();
+      const afterI = raw.slice(iIdx + 3).trim();
+      const palabras = afterI.split(/\s+/).filter(Boolean);
+      if (palabras.length === 0) return { telefono, nombre: '', parentesco: '' };
+      if (palabras.length === 1) return { telefono, nombre: '', parentesco: palabras[0] };
+      const parentesco = palabras[palabras.length - 1];
+      const nombre = palabras.slice(0, -1).join(' ');
+      return { telefono, nombre, parentesco };
+    }
   }
 
-  const resto = parts.slice(1).join(separador).trim();
-  const palabras = resto.split(/\s+/);
+  // Sin ' I ': el teléfono son todos los tokens iniciales compuestos solo de
+  // dígitos/paréntesis (cubre "(236) 4 690836" sin partir en el primer espacio)
+  const tokens = raw.split(/\s+/).filter(Boolean);
+  let i = 0;
+  while (i < tokens.length && /^[\d()+\-]+$/.test(tokens[i])) i++;
 
-  if (palabras.length === 1) {
-    return { telefono, nombre: '', parentesco: palabras[0] };
-  }
+  const telefono = tokens.slice(0, i).join(' ');
+  const resto = tokens.slice(i);
 
-  const parentesco = palabras[palabras.length - 1];
-  const nombre = palabras.slice(0, -1).join(' ');
+  if (resto.length === 0) return { telefono: telefono || raw, nombre: '', parentesco: '' };
+  if (resto.length === 1) return { telefono, nombre: '', parentesco: resto[0] };
+  const parentesco = resto[resto.length - 1];
+  const nombre = resto.slice(0, -1).join(' ');
   return { telefono, nombre, parentesco };
 }
 
