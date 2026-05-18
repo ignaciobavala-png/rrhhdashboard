@@ -1,5 +1,5 @@
-import { RecentSales } from '@/features/overview/components/recent-sales';
+import { ProximosEventos } from '@/features/overview/components/proximos-eventos';
 
 export default function Sales() {
-  return <RecentSales />;
+  return <ProximosEventos />;
 }

@@ -1,5 +1,5 @@
-import { BarGraph } from '@/features/overview/components/bar-graph';
+import { MasaSalarialChart } from '@/features/overview/components/masa-salarial-chart';
 
 export default function BarStats() {
-  return <BarGraph />;
+  return <MasaSalarialChart />;
 }

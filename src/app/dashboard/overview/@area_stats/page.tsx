@@ -1,5 +1,5 @@
-import { AreaGraph } from '@/features/overview/components/area-graph';
+import { BarGraph } from '@/features/overview/components/bar-graph';
 
 export default function AreaStats() {
-  return <AreaGraph />;
+  return <BarGraph />;
 }

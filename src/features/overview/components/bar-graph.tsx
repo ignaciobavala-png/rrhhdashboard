@@ -45,19 +45,26 @@ export function BarGraph() {
         {chartData.length === 0 ? (
           <p className='text-muted-foreground text-sm italic'>Sin información disponible.</p>
         ) : (
-          <ChartContainer config={chartConfig}>
-            <BarChart accessibilityLayer data={chartData}>
+          <ChartContainer config={chartConfig} className='max-h-[200px] w-full'>
+            <BarChart accessibilityLayer data={chartData} margin={{ top: 4, bottom: 0 }}>
               <XAxis
                 dataKey='equipo'
                 tickLine={false}
-                tickMargin={10}
+                tickMargin={6}
                 axisLine={false}
-                tickFormatter={(v) => v.slice(0, 8)}
+                tick={{ fontSize: 11 }}
+                tickFormatter={(v) => v.slice(0, 10)}
               />
-              <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fontSize: 10 }}
+                width={24}
+              />
               <ChartTooltip cursor={false} content={<ChartTooltipContent indicator='dashed' />} />
-              <Bar dataKey='activos' fill='var(--color-activos)' radius={4} />
-              <Bar dataKey='inactivos' fill='var(--color-inactivos)' radius={4} />
+              <Bar dataKey='activos' fill='var(--color-activos)' radius={4} maxBarSize={32} />
+              <Bar dataKey='inactivos' fill='var(--color-inactivos)' radius={4} maxBarSize={32} />
             </BarChart>
           </ChartContainer>
         )}
