@@ -34,6 +34,7 @@ import {
   IconCreditCard,
   IconDeviceLaptop,
   IconDeviceMobile,
+  IconDownload,
   IconDots,
   IconDotsVertical,
   IconEdit,
@@ -244,5 +245,6 @@ export const Icons = {
   legajo: IconFiles,
   meetings: IconMessage2,
   manuals: IconBook2,
-  mobile: IconDeviceMobile
+  mobile: IconDeviceMobile,
+  download: IconDownload
 };

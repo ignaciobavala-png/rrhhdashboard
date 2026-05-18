@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
-import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
+import { parseAsInteger, useQueryStates } from 'nuqs';
 import { getSortingStateParser } from '@/lib/parsers';
 import { useDataTable } from '@/hooks/use-data-table';
 import { DataTable } from '@/components/ui/table/data-table';
-import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
+import { Input } from '@/components/ui/input';
+import { Icons } from '@/components/icons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { columns } from './legajo-table/columns';
@@ -16,10 +17,11 @@ import type { Empleado } from '../api/types';
 export function LegajoTable() {
   const queryClient = useQueryClient();
 
+  const [search, setSearch] = useState('');
+
   const [params] = useQueryStates({
     page: parseAsInteger.withDefault(1),
     perPage: parseAsInteger.withDefault(50),
-    name: parseAsString,
     sort: getSortingStateParser([
       'nombre_apellido',
       'dni',
@@ -33,7 +35,6 @@ export function LegajoTable() {
   const filters = {
     page: params.page,
     limit: params.perPage,
-    ...(params.name && { search: params.name }),
     ...(params.sort.length > 0 && { sort: JSON.stringify(params.sort) })
   };
 
@@ -97,10 +98,20 @@ export function LegajoTable() {
     setEditData((prev) => ({ ...prev, [key]: value }));
   };
 
+  const filtered = useMemo(() => {
+    if (!search.trim()) return data.items;
+    const q = search.toLowerCase();
+    return data.items.filter((e: Empleado) =>
+      [e.nombre_apellido, e.dni, e.equipo_ingreso, e.puesto, e.email].some((v) =>
+        v?.toLowerCase().includes(q)
+      )
+    );
+  }, [data.items, search]);
+
   const { table } = useDataTable({
-    data: data.items,
+    data: filtered,
     columns,
-    pageCount: Math.ceil(data.total_items / params.perPage),
+    pageCount: Math.ceil(filtered.length / params.perPage),
     shallow: true,
     debounceMs: 500,
     initialState: {
@@ -117,9 +128,18 @@ export function LegajoTable() {
   });
 
   return (
-    <DataTable table={table}>
-      <DataTableToolbar table={table} />
-    </DataTable>
+    <div className='flex flex-1 flex-col space-y-3'>
+      <div className='relative max-w-sm'>
+        <Icons.search className='text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4' />
+        <Input
+          placeholder='Buscar por nombre, DNI, equipo, puesto...'
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className='pl-8'
+        />
+      </div>
+      <DataTable table={table} />
+    </div>
   );
 }
 
