@@ -9,7 +9,8 @@ const baseConfig: NextConfig = {
       { source: '/dashboard/talent', destination: '/dashboard/people', permanent: true },
       { source: '/dashboard/talent/:path*', destination: '/dashboard/people/:path*', permanent: true },
       { source: '/dashboard/reuniones', destination: '/dashboard/people/reuniones', permanent: true },
-      { source: '/dashboard/manuales', destination: '/dashboard/people/manuales', permanent: true }
+      { source: '/dashboard/manuales', destination: '/dashboard/people/manuales', permanent: true },
+      { source: '/dashboard/flota', destination: '/dashboard/flota/celulares', permanent: true }
     ];
   },
   allowedDevOrigins: ['*.trycloudflare.com'],

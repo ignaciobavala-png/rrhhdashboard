@@ -58,12 +58,15 @@ export const navGroups: NavGroup[] = [
     label: 'Administración',
     items: [
       {
-        title: 'Flota Celulares',
-        url: '/dashboard/flota',
+        title: 'Flota',
+        url: '/dashboard/flota/celulares',
         icon: 'mobile',
         isActive: false,
         shortcut: ['f', 'f'],
-        items: []
+        items: [
+          { title: 'Flota de Celulares', url: '/dashboard/flota/celulares', shortcut: ['f', 'c'] },
+          { title: 'Flota de Laptops', url: '/dashboard/flota/laptops', shortcut: ['f', 'l'] }
+        ]
       },
       {
         title: 'Expedientes',
