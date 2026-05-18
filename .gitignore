@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Sensitive data (raw Excel files from the company)
 /data-raw
+
+# Supabase temp files
+/supabase/.temp/

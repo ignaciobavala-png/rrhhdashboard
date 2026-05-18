@@ -1,40 +1,51 @@
-# PetraLabs RRHH — SaaS de Gestión de Recursos Humanos
+# PetraLabs RRHH — Dashboard de Gestión de Recursos Humanos
 
-Sistema multi-empresa de RRHH construido sobre [next-shadcn-dashboard-starter](https://github.com/Kiranism/next-shadcn-dashboard-starter).
+Sistema interno de RRHH construido sobre [next-shadcn-dashboard-starter](https://github.com/Kiranism/next-shadcn-dashboard-starter).
 
 ## Stack
 
 | Capa | Tecnología |
 |------|-----------|
-| Framework | Next.js 16 (App Router) + TypeScript strict |
+| Framework | Next.js 15 (App Router) + TypeScript strict |
 | UI | Shadcn UI + Tailwind CSS v4 |
-| Estado | Zustand v5 |
-| Auth | Suprimida para desarrollo. Pendiente migrar a **Supabase Auth**. |
-| DB | Supabase PostgreSQL + RLS + Storage (pendiente backend) |
-| Package | pnpm |
-| Linting | OxLint + Oxfmt |
-
-## Sistema de Diseño
-
-- **Paleta**: Primario Indigo `#4f46e5` / Acento Esmeralda `#10b981`
-- **Tipografía**: Inter (sans), JetBrains Mono (mono)
-- **Modo oscuro**: Soportado nativamente con fondos grises azulados
-- **White Label**: Logo y color primario configurables por tenant (pendiente)
+| Data fetching | TanStack Query v5 (React Query) |
+| Forms | TanStack Form + Zod |
+| URL state | nuqs |
+| DB | Supabase PostgreSQL + RLS |
+| Package manager | pnpm |
 
 ## Módulos
 
 | Ruta | Módulo | Estado |
 |------|--------|--------|
-| `/dashboard/overview` | Dashboard RRHH | Cards + gráficos funcionales |
-| `/dashboard/talent` | Gestión de Talento | Placeholder |
-| `/dashboard/talent/new` | Nuevo Empleado | Placeholder |
-| `/dashboard/talent/[id]` | Perfil de Empleado | Placeholder |
-| `/dashboard/documents` | Expediente Digital | Placeholder |
-| `/dashboard/operations` | Control Operativo | Placeholder |
-| `/dashboard/payroll` | Salarios | Placeholder |
-| `/dashboard/admin` | Admin Center | Placeholder |
-| `/dashboard/profile` | Perfil de Usuario | Placeholder |
-| `/dashboard/notifications` | Notificaciones | Placeholder |
+| `/dashboard/overview` | Dashboard RRHH | ✅ Funcional — métricas, gráficos, actividad |
+| `/dashboard/legajo` | Legajos de Empleados | ✅ Funcional — tabla con filtros, búsqueda, exportación |
+| `/dashboard/legajo/[id]` | Perfil de Empleado | ✅ Funcional — datos personales, sueldo, contacto emergencia |
+| `/dashboard/flota` | Flota / Líneas Móviles | ✅ Funcional — líneas asignadas, estado, operador |
+| `/dashboard/manuales` | Manuales de Procedimientos | ✅ Funcional — listado por área, acceso por rol |
+| `/dashboard/calendario` | Calendario de Eventos | ✅ Funcional — días de estudio, ausencias, mudanza |
+| `/dashboard/reuniones` | Reuniones | ✅ Funcional — agenda de reuniones |
+| `/dashboard/payroll` | Salarios | ✅ Funcional — historial de sueldos por empleado |
+| `/dashboard/talent` | Gestión de Talento | 🔧 Placeholder |
+| `/dashboard/documents` | Expediente Digital | 🔧 Placeholder |
+| `/dashboard/operations` | Control Operativo | 🔧 Placeholder |
+| `/dashboard/admin` | Admin Center | 🔧 Placeholder |
+
+## Base de datos (Supabase)
+
+| Tabla | Descripción | Filas |
+|-------|-------------|-------|
+| `empresas` | Empresa(s) registradas | 1 |
+| `empleados` | Datos de empleados | 22 |
+| `sueldos` | Historial de salarios | 263 |
+| `vacaciones` | Períodos de vacaciones | 23 |
+| `vacaciones_dias` | Días puntuales de vacaciones | 36 |
+| `home_office_semanal` | Agenda de modalidad semanal | 55 |
+| `lineas_moviles` | Líneas móviles de la flota | 7 |
+| `manuales` | Manuales por área | 50 |
+| `eventos_calendario` | Eventos del calendario | 9 |
+| `puestos` | Cargos/puestos disponibles | 17 |
+| `reuniones` | Registro de reuniones | — |
 
 ## Desarrollo
 
@@ -44,75 +55,38 @@ pnpm dev
 # Abrir http://localhost:3000
 ```
 
-Sin autenticación. Desarrollo directo sin login.
+Requiere un archivo `.env.local` con:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+Sin autenticación. Acceso directo al dashboard.
 
 ## Estructura del Proyecto
 
 ```
 src/
 ├── app/
-│   ├── dashboard/
-│   │   ├── admin/           # Admin Center
-│   │   ├── documents/       # Expediente Digital
-│   │   ├── notifications/   # Notificaciones
-│   │   ├── operations/      # Control Operativo
-│   │   ├── overview/        # Dashboard principal (parallel routes)
-│   │   ├── payroll/         # Salarios
-│   │   ├── profile/         # Perfil de usuario
-│   │   └── talent/          # Gestión de Talento + [id] + new
-│   └── auth/                # Login/registro (placeholder)
+│   └── dashboard/           # Rutas del dashboard (App Router)
 ├── components/
 │   ├── layout/              # Sidebar, header, providers
 │   ├── themes/              # Sistema de temas (petralabs default)
-│   └── ui/                  # Shadcn UI primitives
+│   └── ui/                  # Shadcn UI primitives + TanStack Form wrappers
 ├── features/
-│   ├── admin/               # Admin Center
-│   ├── auth/                # Auth pages
-│   ├── documents/           # Expediente Digital
-│   ├── notifications/       # Centro de notificaciones
-│   ├── operations/          # Control Operativo
-│   ├── overview/            # Dashboard (gráficos, actividad)
-│   ├── payroll/             # Salarios
-│   ├── profile/             # Perfil
-│   └── talent/              # Gestión de Talento
-├── config/
-│   ├── nav-config.ts        # Navegación (sidebar)
-│   └── infoconfig.ts        # Info sidebar
-├── hooks/                   # Custom hooks
-├── lib/                     # Utilidades
-├── styles/
-│   ├── themes/
-│   │   └── petralabs.css    # Tema corporativo
-│   └── globals.css
-└── types/                   # TypeScript types
+│   ├── overview/            # Dashboard principal
+│   ├── legajo/              # Legajos de empleados
+│   ├── flota/               # Flota / líneas móviles
+│   ├── manuales/            # Manuales de procedimientos
+│   ├── calendario/          # Calendario de eventos
+│   ├── reuniones/           # Reuniones
+│   └── payroll/             # Salarios
+├── lib/
+│   └── supabase.ts          # Cliente Supabase
+└── scripts/
+    └── audit.py             # Auditoría de datos DB vs Excel
 ```
-
-## Cleanup Realizado (vs starter original)
-
-- [x] Eliminados módulos demo: Workspaces, Billing, Products, Users, Chat, Kanban, Forms, Elements, React Query demo
-- [x] ClerkProvider removido del layout (sin cartel de keyless mode)
-- [x] Sin autenticación forzada en desarrollo
-- [x] Navegación en español solo con módulos RRHH
-- [x] Dashboard con métricas de RRHH (empleados, ausentes, vacaciones, masa salarial)
-- [x] Tema petralabs como default (Indigo/Esmeralda)
-- [x] Git iniciado con 2 commits
-
-## Pendiente para Próximo Agente
-
-### Fase 1 — Multi-tenencia y Core DB
-- [ ] Eliminar `@clerk/nextjs` y `@clerk/themes` de package.json
-- [ ] Instalar `@supabase/ssr` + `@supabase/supabase-js`
-- [ ] Crear `supabase/migrations/` con tablas: `empresas`, `miembros`, `perfiles`
-- [ ] Configurar RLS policies en todas las tablas
-- [ ] Login page custom con email + contraseña (Shadcn UI, sin branding externo)
-- [ ] Hook `useEmpresa()` y selector de empresa activa
-
-### Fase 2 — Módulos funcionales
-- [ ] CRUD de empleados conectado a Supabase
-- [ ] Subida de documentos a Supabase Storage
-- [ ] Calendario de vacaciones y marcaje de asistencia
-- [ ] Recibos de salario con PDF en Storage
-- [ ] Admin Center con toggle de módulos y white label
 
 ## Licencia
 
