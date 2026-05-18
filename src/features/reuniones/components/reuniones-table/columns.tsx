@@ -15,7 +15,7 @@ type Reunion = {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export const columns: ColumnDef<Reunion>[] = [
+export const columns: ColumnDef<Reunion, any>[] = [
   {
     id: 'titulo',
     accessorKey: 'titulo',
