@@ -18,7 +18,7 @@ export function LegajoTable() {
 
   const [params] = useQueryStates({
     page: parseAsInteger.withDefault(1),
-    perPage: parseAsInteger.withDefault(10),
+    perPage: parseAsInteger.withDefault(50),
     name: parseAsString,
     sort: getSortingStateParser([
       'nombre_apellido',
