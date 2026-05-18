@@ -3,15 +3,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
-type Reunion = {
-  id: number;
-  titulo: string;
-  fecha: string;
-  hora: string;
-  duracion: number;
-  participantes: string[];
-  resumen: string;
-};
+import type { Reunion } from '@/features/reuniones/api/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
