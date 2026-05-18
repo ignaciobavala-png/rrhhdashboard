@@ -105,7 +105,7 @@ export function ProximosEventos() {
         }
       }
 
-      return resultado.sort((a, b) => a.diasRestantes - b.diasRestantes).slice(0, 8);
+      return resultado.toSorted((a, b) => a.diasRestantes - b.diasRestantes).slice(0, 8);
     },
     staleTime: 5 * 60 * 1000
   });

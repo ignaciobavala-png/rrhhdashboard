@@ -58,7 +58,7 @@ export function VacacionesRanking() {
           iniciales: iniciales(nombre),
           saldo: vacMap.get(id) ?? 0
         }))
-        .sort((a, b) => b.saldo - a.saldo);
+        .toSorted((a, b) => b.saldo - a.saldo);
     }
   });
 

@@ -108,7 +108,7 @@ export function parseContactoEmergencia(raw: string | null): ContactoEmergencia 
   const iIdx = raw.indexOf(' I ');
   if (iIdx !== -1) {
     const beforeI = raw.slice(0, iIdx).trim();
-    if (/^[\d\s()+\-]+$/.test(beforeI)) {
+    if (/^[\d\s()+-]+$/.test(beforeI)) {
       const telefono = beforeI.replace(/\s+/g, ' ').trim();
       const afterI = raw.slice(iIdx + 3).trim();
       const palabras = afterI.split(/\s+/).filter(Boolean);
@@ -124,7 +124,7 @@ export function parseContactoEmergencia(raw: string | null): ContactoEmergencia 
   // dígitos/paréntesis (cubre "(236) 4 690836" sin partir en el primer espacio)
   const tokens = raw.split(/\s+/).filter(Boolean);
   let i = 0;
-  while (i < tokens.length && /^[\d()+\-]+$/.test(tokens[i])) i++;
+  while (i < tokens.length && /^[\d()+-]+$/.test(tokens[i])) i++;
 
   const telefono = tokens.slice(0, i).join(' ');
   const resto = tokens.slice(i);

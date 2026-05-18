@@ -20,13 +20,14 @@ export async function marcarTodasLeidas(): Promise<void> {
   await supabase.from('notificaciones').update({ leida: true }).eq('leida', false);
 }
 
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
 export async function getProximosEventos(): Promise<ProximoEvento[]> {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
   const en5 = new Date(hoy);
   en5.setDate(hoy.getDate() + 5);
 
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
   const eventos: ProximoEvento[] = [];
 
   // Reuniones en los próximos 5 días
@@ -75,5 +76,5 @@ export async function getProximosEventos(): Promise<ProximoEvento[]> {
     }
   }
 
-  return eventos.sort((a, b) => a.diasRestantes - b.diasRestantes);
+  return eventos.toSorted((a, b) => a.diasRestantes - b.diasRestantes);
 }

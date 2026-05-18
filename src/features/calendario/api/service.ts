@@ -7,7 +7,7 @@ export async function getVacacionesDias(): Promise<VacacionesDia[]> {
     console.error('[calendario] vacaciones error:', error.message);
     return [];
   }
-  return (data ?? []).map((r: any) => ({
+  return (data ?? []).map((r: Record<string, unknown>) => ({
     id: r.id as number,
     mes: r.mes as number,
     anio_uso: r.anio_uso as number,

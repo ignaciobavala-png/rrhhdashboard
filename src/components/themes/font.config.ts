@@ -2,8 +2,6 @@ import {
   Architects_Daughter,
   DM_Sans,
   Fira_Code,
-  Geist,
-  Geist_Mono,
   Instrument_Sans,
   Inter,
   JetBrains_Mono,

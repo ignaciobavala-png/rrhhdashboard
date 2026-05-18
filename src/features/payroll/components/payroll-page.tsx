@@ -39,7 +39,7 @@ function buildPivot(sueldos: Sueldo[], moneda: 'PESOS ARG' | 'USD'): SueldosPorE
     arr[s.mes - 1] = s.monto;
   }
   return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
+    .toSorted(([a], [b]) => a.localeCompare(b))
     .map(([nombre_apellido, meses]) => ({ nombre_apellido, moneda, meses }));
 }
 
@@ -100,7 +100,7 @@ function SueldoTable({
         </thead>
         <tbody>
           {rows.map((row) => {
-            const ultimo = [...row.meses].reverse().find((v) => v !== null) ?? null;
+            const ultimo = [...row.meses].toReversed().find((v) => v !== null) ?? null;
             return (
               <tr key={row.nombre_apellido} className='border-b last:border-0 hover:bg-muted/30'>
                 <td className='px-4 py-2 font-medium'>{row.nombre_apellido}</td>

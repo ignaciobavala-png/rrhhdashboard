@@ -82,9 +82,12 @@ export function ManualUploader() {
       <p className='text-sm font-medium'>Subir manual</p>
 
       <div
+        role='button'
+        tabIndex={0}
         className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors cursor-pointer
           ${dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}`}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -129,8 +132,11 @@ export function ManualUploader() {
       {file && (
         <div className='grid grid-cols-2 gap-3'>
           <div className='space-y-1'>
-            <label className='text-xs font-medium'>Nombre del manual</label>
+            <label htmlFor='manual-nombre' className='text-xs font-medium'>
+              Nombre del manual
+            </label>
             <Input
+              id='manual-nombre'
               value={tarea}
               onChange={(e) => setTarea(e.target.value)}
               placeholder='Ej. Manual de incorporación'
@@ -138,8 +144,11 @@ export function ManualUploader() {
             />
           </div>
           <div className='space-y-1'>
-            <label className='text-xs font-medium'>Área (opcional)</label>
+            <label htmlFor='manual-area' className='text-xs font-medium'>
+              Área (opcional)
+            </label>
             <Input
+              id='manual-area'
               value={area}
               onChange={(e) => setArea(e.target.value)}
               placeholder='Ej. Comercial, RRHH...'

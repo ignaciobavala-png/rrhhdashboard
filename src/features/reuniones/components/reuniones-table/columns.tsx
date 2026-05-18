@@ -12,7 +12,7 @@ import { es } from 'date-fns/locale';
 type ReunionesTableMeta = { openNotas: (reunion: Reunion) => void };
 const getMeta = (table: Table<Reunion>) => table.options.meta as ReunionesTableMeta;
 
-export const columns: ColumnDef<Reunion, any>[] = [
+export const columns: ColumnDef<Reunion, unknown>[] = [
   {
     id: 'titulo',
     accessorKey: 'titulo',

@@ -30,7 +30,7 @@ export function BarGraph() {
         else map[equipo].inactivos++;
       }
       return Object.entries(map)
-        .sort((a, b) => b[1].activos - a[1].activos)
+        .toSorted((a, b) => b[1].activos - a[1].activos)
         .map(([equipo, counts]) => ({ equipo, ...counts }));
     }
   });

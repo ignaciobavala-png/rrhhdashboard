@@ -43,7 +43,7 @@ export function MasaSalarialChart() {
       }
 
       const sorted = Object.entries(byMonth)
-        .sort(([a], [b]) => a.localeCompare(b))
+        .toSorted(([a], [b]) => a.localeCompare(b))
         .slice(-6);
 
       return sorted.map(([, v]) => ({ mes: v.label, ars: v.ars }));
