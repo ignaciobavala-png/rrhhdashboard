@@ -32,18 +32,22 @@ import {
   getEmpleadosActivos,
   registrarVacaciones
 } from '@/features/calendario/api/service';
+import { getTodasLasReuniones } from '@/features/reuniones/api/service';
 import type { EventoCalendario } from '@/features/calendario/api/types';
+import type { Reunion } from '@/features/reuniones/api/types';
 import type { VacacionesFormValues } from '@/features/calendario/schemas/vacaciones';
+import { ReunionDialog } from './reunion-dialog';
 
 const tipoConfig: Record<string, { label: string; bg: string; chip: string }> = {
   licencia: { label: 'Vacaciones', bg: 'bg-emerald-500', chip: 'bg-emerald-500 text-white' },
   estudio: { label: 'Estudio', bg: 'bg-amber-500', chip: 'bg-amber-500 text-white' },
   ausencia: { label: 'Ausencia', bg: 'bg-red-500', chip: 'bg-red-500 text-white' },
   cumpleanos: { label: 'Cumpleaños', bg: 'bg-purple-500', chip: 'bg-purple-500 text-white' },
-  mudanza: { label: 'Mudanza', bg: 'bg-sky-500', chip: 'bg-sky-500 text-white' }
+  mudanza: { label: 'Mudanza', bg: 'bg-sky-500', chip: 'bg-sky-500 text-white' },
+  reunion: { label: 'Reunión', bg: 'bg-indigo-500', chip: 'bg-indigo-500 text-white' }
 };
 
-const allTipos = ['licencia', 'estudio', 'ausencia', 'cumpleanos', 'mudanza'] as const;
+const allTipos = ['licencia', 'estudio', 'ausencia', 'cumpleanos', 'mudanza', 'reunion'] as const;
 const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 function shortName(nombreApellido: string): string {
@@ -59,8 +63,10 @@ export default function CalendarioPage() {
   const [manualEventos, setManualEventos] = useState<EventoCalendario[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [vacDialogOpen, setVacDialogOpen] = useState(false);
+  const [reunionDialogOpen, setReunionDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [editingEvento, setEditingEvento] = useState<EventoCalendario | null>(null);
+  const [editingReunion, setEditingReunion] = useState<Reunion | null>(null);
 
   const { data: vacDias = [] } = useQuery({
     queryKey: ['calendario', 'vacaciones'],
@@ -80,6 +86,11 @@ export default function CalendarioPage() {
   const { data: empleadosActivos = [] } = useQuery({
     queryKey: ['calendario', 'empleados'],
     queryFn: getEmpleadosActivos
+  });
+
+  const { data: reunionesData = [] } = useQuery({
+    queryKey: ['calendario', 'reuniones'],
+    queryFn: getTodasLasReuniones
   });
 
   const viewYear = getYear(currentMonth);
@@ -147,8 +158,21 @@ export default function CalendarioPage() {
       });
     }
 
+    for (const r of reunionesData) {
+      result.push({
+        id: `reunion-${r.id}`,
+        fecha: r.fecha,
+        titulo: r.titulo,
+        tipo: 'reunion',
+        empleado: r.participantes.slice(0, 2).join(', '),
+        empleadoId: 0,
+        readonly: false,
+        reunionId: r.id
+      });
+    }
+
     return result;
-  }, [vacDias, eventosRows, empleados, viewYear]);
+  }, [vacDias, eventosRows, empleados, viewYear, reunionesData]);
 
   const allEventos = useMemo(
     () => [...eventosBase, ...manualEventos],
@@ -197,6 +221,13 @@ export default function CalendarioPage() {
   const handleEventoClick = (e: React.MouseEvent | React.KeyboardEvent, ev: EventoCalendario) => {
     e.stopPropagation();
     if (ev.readonly) return;
+    if (ev.tipo === 'reunion' && ev.reunionId) {
+      const reunion = reunionesData.find((r) => r.id === ev.reunionId) ?? null;
+      setEditingReunion(reunion);
+      setSelectedDate(new Date(ev.fecha.replace(/-/g, '/')));
+      setReunionDialogOpen(true);
+      return;
+    }
     setSelectedDate(new Date(ev.fecha.replace(/-/g, '/')));
     setEditingEvento(ev);
     setDialogOpen(true);
@@ -254,6 +285,17 @@ export default function CalendarioPage() {
         ))}
         <div className='ml-auto flex items-center gap-2'>
           <span className='text-muted-foreground text-xs'>{totalVisible} eventos</span>
+          <Button
+            size='sm'
+            variant='outline'
+            onClick={() => {
+              setEditingReunion(null);
+              setReunionDialogOpen(true);
+            }}
+          >
+            <Icons.add className='mr-1 h-4 w-4' />
+            Reunión
+          </Button>
           <Button size='sm' onClick={() => setVacDialogOpen(true)}>
             <Icons.add className='mr-1 h-4 w-4' />
             Vacaciones
@@ -378,6 +420,13 @@ export default function CalendarioPage() {
         onOpenChange={setVacDialogOpen}
         empleados={empleadosActivos}
         onSave={handleRegistrarVacaciones}
+      />
+
+      <ReunionDialog
+        open={reunionDialogOpen}
+        onOpenChange={setReunionDialogOpen}
+        fecha={selectedDate}
+        editingReunion={editingReunion}
       />
     </div>
   );

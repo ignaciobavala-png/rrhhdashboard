@@ -20,11 +20,12 @@ export type EventoCalendario = {
   id: string;
   fecha: string;
   titulo: string;
-  tipo: 'licencia' | 'estudio' | 'ausencia' | 'cumpleanos' | 'mudanza';
+  tipo: 'licencia' | 'estudio' | 'ausencia' | 'cumpleanos' | 'mudanza' | 'reunion';
   empleado: string;
   empleadoId: number;
   descripcion?: string;
   readonly?: boolean;
+  reunionId?: number;
 };
 
 export type EventoCalendarioRow = {

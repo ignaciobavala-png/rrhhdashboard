@@ -21,3 +21,13 @@ export type ReunionesFilters = {
   limit?: number;
   search?: string;
 };
+
+export type ReunionInput = {
+  titulo: string;
+  fecha: string;
+  hora: string;
+  duracion: number;
+  participantes: string[];
+  resumen?: string | null;
+  empresa_id: number;
+};
