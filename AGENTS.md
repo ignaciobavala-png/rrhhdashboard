@@ -4,11 +4,12 @@
 
 - **Framework**: Next.js 16 (App Router) + TypeScript strict
 - **UI**: Shadcn UI + Tailwind CSS v4
-- **Estado**: Zustand v5 + TanStack Query v5
-- **Auth**: Suprimida para desarrollo. Pendiente migrar a **Supabase Auth**.
-- **DB**: Supabase PostgreSQL + RLS — **conectado y funcionando**
+- **Estado**: TanStack Query v5 (sin Zustand — removido)
+- **Auth**: Sin autenticación. Un solo admin. RLS con `USING (true)` en todas las tablas.
+- **DB**: Supabase PostgreSQL + Storage — **conectado y funcionando**
 - **Package**: pnpm
-- **Linting**: OxLint + Oxfmt
+- **Linting**: OxLint + Oxfmt (0 errores, 0 warnings en producción)
+- **Deploy**: Vercel (conectado a `main` en GitHub)
 
 ## Convenciones
 
@@ -18,43 +19,43 @@
 - Tipos en `src/features/<modulo>/api/types.ts`
 - Migraciones SQL en `supabase/migrations/`
 - Tema por defecto: `petralabs` (Indigo `#4f46e5` primario, Esmeralda `#10b981` acento)
-- Tema implementado via `src/lib/theme-context.tsx` (custom, reemplaza next-themes)
 - Tipografía: Inter (sans), JetBrains Mono (mono)
 - Sin testing, sin Docker
+- **Undo toast**: toda acción destructiva/creativa usa `showUndoToast()` de `src/lib/undo-toast.ts` (10 segundos)
+- **ConfirmDialog**: toda eliminación usa `src/components/ui/confirm-dialog.tsx` (nunca `confirm()` nativo)
+- Iconos: solo desde `@/components/icons`, nunca directo de `@tabler/icons-react`
 
 ## Comandos
 
 ```bash
-pnpm dev          # Desarrollo (localhost:3000, sin auth)
+pnpm dev          # Desarrollo (localhost:3000)
 pnpm build        # Build producción
 pnpm lint         # OxLint
+git push origin main  # Dispara deploy automático en Vercel
 ```
 
 ## Estado Actual (Mayo 2026)
 
-Fase de datos reales. Todos los módulos principales conectados a Supabase.
-No requiere autenticación para desarrollo. RLS activo con `empresa_id`.
+Proyecto en producción en Vercel. Todos los módulos principales conectados a Supabase con datos reales.
+Sin autenticación — acceso libre al admin (single-tenant, un solo usuario admin).
 
 ## Módulos
 
 | Ruta | Módulo | Estado |
 |------|--------|--------|
-| `/dashboard/overview` | Resumen RRHH | Supabase — KPIs + 4 gráficos Recharts |
-| `/dashboard/legajo` | Legajo | Supabase — tabla con edición inline, 50 empleados reales |
-| `/dashboard/legajo/[id]` | Detalle Empleado | Supabase — datos personales + laborales + modalidad + puesto |
-| `/dashboard/calendario` | Calendario | Supabase — RPC + eventos reales + vacaciones + cumpleaños |
-| `/dashboard/talent` | Gestión de Talento | Placeholder — solo UI estática |
-| `/dashboard/talent/new` | Nuevo Empleado | Placeholder |
-| `/dashboard/talent/[id]` | Perfil de Empleado | Placeholder |
-| `/dashboard/reuniones` | Reuniones | Supabase — tabla con minutas reales |
-| `/dashboard/manuales` | Manuales | Supabase — tabla con manuales reales |
-| `/dashboard/flota` | Flota Celulares | Supabase — tabla con join a empleados |
-| `/dashboard/documents` | Expediente Digital | Placeholder |
-| `/dashboard/operations` | Control Operativo | Placeholder |
-| `/dashboard/payroll` | Sueldos | Supabase — accordion pesos/USD + bonos anuales |
-| `/dashboard/admin` | Admin Center | Placeholder |
-| `/dashboard/profile` | Perfil de Usuario | Placeholder |
-| `/dashboard/notifications` | Notificaciones | Zustand en memoria (sin persistencia) |
+| `/dashboard/overview` | Resumen RRHH | ✅ Datos reales — KPIs + evolución masa salarial + próximos eventos + empleados por equipo + saldo vacaciones |
+| `/dashboard/people` | Legajo | ✅ Supabase — tabla con edición inline, empleados reales |
+| `/dashboard/people/[id]` | Detalle Empleado | ✅ Supabase — datos personales + laborales + modalidad + puesto |
+| `/dashboard/people/new` | Nuevo Empleado | ✅ Form completo |
+| `/dashboard/people/reuniones` | Reuniones | ✅ Supabase — tabla + minutas + notas con undo toast |
+| `/dashboard/people/manuales` | Manuales | ✅ Supabase Storage — uploader drag & drop + descarga + eliminar |
+| `/dashboard/calendario` | Calendario | ✅ Supabase — RPC + eventos + vacaciones + cumpleaños |
+| `/dashboard/flota/celulares` | Flota Celulares | ✅ Supabase — join a empleados |
+| `/dashboard/flota/laptops` | Flota Laptops | ✅ Supabase — CRUD completo con undo toast |
+| `/dashboard/payroll` | Sueldos | ✅ Supabase — accordion pesos/USD + bonos anuales |
+| `/dashboard/notifications` | Notificaciones | ✅ Supabase — historial por triggers DB + próximos eventos (5 días) |
+| `/dashboard/documents` | Expediente Digital | 🔲 Placeholder |
+| `/dashboard/operations` | Control Operativo | 🔲 Placeholder |
 
 ## Base de Datos
 
@@ -68,72 +69,134 @@ No requiere autenticación para desarrollo. RLS activo con `empresa_id`.
 | `20260515_00003_crear_tabla_puestos.sql` | May 15 | Tabla `puestos` con datos de cargo |
 | `20260515_00004_cargar_bonos.sql` | May 15 | Columna `bono_anual` en sueldos |
 | `20260515_00005_arreglar_rls_puestos.sql` | May 15 | RLS para tabla puestos |
+| `20260518_00001_fix_reuniones_rls.sql` | May 18 | Fix RLS reuniones para writes del cliente anon |
+| `20260518_00002_manuales_storage.sql` | May 18 | Bucket `manuales` en Storage + RLS + columnas storage_path/nombre_archivo/tamanio/tipo_archivo |
+| `flota_laptops_table` | May 18 | Tabla `flota_laptops` con FK, check constraint, RLS, indexes |
+| `flota_laptops_add_detail_columns` | May 18 | Columnas: usuario, equipo, ubicacion, comentarios |
+| `notificaciones_tabla_y_triggers` | May 18 | Tabla `notificaciones` + función `log_change()` + 6 AFTER triggers (empleados, puestos, reuniones, manuales, flota_laptops, lineas_moviles) |
 
 ### Tablas
 
-| Tabla | Origen Excel | Propósito |
-|-------|-------------|-----------|
-| `empresas` | — | Tenant multi-empresa |
-| `empleados` | `Legajo Colaboradores.xlsx` — Legajo | Datos personales + laborales |
-| `puestos` | — | Cargo/puesto por empleado (upsert desde legajo) |
-| `home_office_semanal` | `Legajo Colaboradores.xlsx` — HO | Modalidad semanal (Lu-Vi) |
-| `vacaciones` | `Legajo Colaboradores.xlsx` — Vacaciones 2025 | Saldos vacacionales |
-| `vacaciones_dias` | — | Detalle mensual de días usados |
-| `lineas_moviles` | `Legajo Colaboradores.xlsx` — Lineas Móviles | Flota de celulares |
-| `sueldos` | `💰Sueldos Contexto.xlsx` | Historial salarial mensual + bono_anual |
-| `manuales` | `Listado de Manuales por Area.xlsx` | Manuales por área |
-| `reuniones` | — | Minutas de reuniones |
+| Tabla | Propósito |
+|-------|-----------|
+| `empresas` | Tenant multi-empresa |
+| `empleados` | Datos personales + laborales |
+| `puestos` | Cargo/puesto por empleado (upsert desde legajo) |
+| `home_office_semanal` | Modalidad semanal (Lu-Vi) |
+| `vacaciones` | Saldos vacacionales por año |
+| `vacaciones_dias` | Detalle mensual de días usados |
+| `lineas_moviles` | Flota de celulares |
+| `flota_laptops` | Flota de laptops (marca, modelo, serie, usuario, equipo, ubicación, estado) |
+| `sueldos` | Historial salarial mensual + bono_anual (PESOS ARG y USD) |
+| `manuales` | Manuales por área (con storage_path a bucket Supabase) |
+| `reuniones` | Minutas de reuniones (título, fecha, hora, asistentes, resumen) |
+| `notificaciones` | Log de actividad generado por triggers DB (leida, entidad, accion, descripcion) |
 
 ### RLS
 
-Todas las tablas tienen RLS habilitado con aislamiento por `empresa_id`. El tenant se define via `app.empresa_id` en la sesión.
+Todas las tablas tienen RLS con `USING (true)` — sin auth, acceso libre desde el cliente anon.
 
-### Datos Raw
+### Storage
 
-Los archivos Excel originales están en `data-raw/`. Los archivos `src/constants/mock-api-*.ts` son legacy y no se usan (quedan como referencia histórica).
+- Bucket `manuales` — archivos PDF/Word/Excel, límite 50 MB, público via signed URL
+- Descargar: `getDownloadUrl(storage_path)` en `src/features/manuales/api/service.ts`
+
+### Triggers de Actividad
+
+La función `log_change()` (SECURITY DEFINER) registra automáticamente en `notificaciones` cualquier INSERT/UPDATE/DELETE en: `empleados`, `puestos`, `reuniones`, `manuales`, `flota_laptops`, `lineas_moviles`.
+
+## Patrones Clave
+
+### Undo Toast
+```ts
+import { showUndoToast } from '@/lib/undo-toast';
+
+showUndoToast('Descripción acción', async () => {
+  await revertirCambio();
+  queryClient.invalidateQueries({ queryKey: ['...'] });
+});
+```
+
+### Confirm Dialog (eliminaciones)
+```tsx
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+
+<ConfirmDialog
+  open={open} onOpenChange={setOpen}
+  title='¿Eliminar X?' description='...'
+  confirmLabel='Eliminar' destructive
+  onConfirm={handleDelete} loading={loading}
+/>
+```
+
+### Flujo estándar mutación
+```ts
+// 1. Guardar estado previo
+const saved = { ...row.original };
+// 2. Ejecutar acción
+await deleteX(id);
+// 3. Invalidar query
+queryClient.invalidateQueries({ queryKey: ['modulo'] });
+// 4. Undo toast con restauración
+showUndoToast('X eliminado', async () => {
+  await createX(saved);
+  queryClient.invalidateQueries({ queryKey: ['modulo'] });
+});
+```
 
 ## Archivos Clave
 
 | Archivo | Propósito |
 |---------|-----------|
 | `src/lib/supabase.ts` | Cliente Supabase compartido (browser) |
-| `src/lib/theme-context.tsx` | Theme provider custom (reemplaza next-themes) |
-| `src/lib/query-client.ts` | TanStack Query client factory |
+| `src/lib/undo-toast.ts` | Helper showUndoToast (10s, botón ↩ Deshacer) |
+| `src/lib/theme-context.tsx` | Theme provider custom |
+| `src/components/ui/confirm-dialog.tsx` | Dialog de confirmación para eliminaciones |
+| `src/config/nav-config.ts` | Configuración de navegación lateral |
 | `src/hooks/use-data-table.ts` | Hook data-table con URL state vía nuqs |
 
-## Cleanup Realizado
+## Resumen / Overview — Widgets Implementados
 
-- Eliminados: Workspaces, Billing, Products, Users, Chat, Kanban, Forms, Elements, React Query demo, About, Privacy, Terms
-- ClerkProvider removido del layout (ya no hay cartel de keyless mode)
-- `scripts/cleanup.js` y `scripts/postinstall.js` eliminados
-- `next-themes` reemplazado por `src/lib/theme-context.tsx` (custom, sin dependencia extra)
-- Navegación reorganizada: Gestión de Personas + Administración + Configuración
-- Dashboard con métricas en español (empleados, ausentes, vacaciones, masa salarial)
-- Ícono de GitHub en navbar removido
-- Tema `petralabs` como default
-- Todos los módulos principales migrados de mock data a Supabase
+| Slot | Componente | Datos |
+|------|-----------|-------|
+| KPI x4 | `layout.tsx` (server) | Empleados activos, Flota asignada (líneas+laptops), Masa ARS (último mes + delta %), Masa USD |
+| `@bar_stats` | `masa-salarial-chart.tsx` | Evolución masa salarial ARS — área chart, últimos 6 meses |
+| `@sales` | `proximos-eventos.tsx` | Reuniones + cumpleaños próximos 14 días, badge urgente si ≤1 día |
+| `@area_stats` | `bar-graph.tsx` | Empleados por equipo — barras activos/inactivos |
+| Inline | `vacaciones-ranking.tsx` | Lista todos activos con barra progreso y días, colores por criticidad |
 
-## Issues Conocidos
+## Cleanup Realizado en Esta Sesión
 
-- `@clerk/nextjs` y `@clerk/themes` están en `package.json` como dependencias no usadas. Se pueden eliminar con `pnpm remove @clerk/nextjs @clerk/themes`.
-- API routes `/api/products` y `/api/users` son heredadas del starter y no se usan.
-- `features/overview/components/overview.tsx` existe pero no es importado (código muerto del starter).
-- Sin autenticación — accesible a cualquiera en desarrollo.
-- Archivos `src/constants/mock-api-*.ts` son legacy muertos (6 archivos sin imports).
-- Módulos Talent, Documents, Operations, Admin, Profile siguen como placeholders.
+- **Removidos**: `@clerk/nextjs`, `@clerk/themes`, `@sentry/nextjs` de package.json y pnpm-lock.yaml
+- **Eliminados**: `src/proxy.ts` (clerkMiddleware), `src/app/auth/`, `src/features/auth/`
+- **Limpiados**: `src/instrumentation.ts`, `src/instrumentation-client.ts` (eliminado), `src/app/global-error.tsx`
+- **next.config.ts**: eliminado `withSentryConfig` y hostnames de Clerk
+- **Variables de entorno**: solo `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` necesarias
 
-## Plan de Migración Clerk → Supabase Auth
+## Deploy Vercel
 
-1. Eliminar `@clerk/nextjs` y `@clerk/themes` de dependencies
-2. `pnpm add @supabase/ssr @supabase/supabase-js`
-3. Crear `src/lib/supabase/client.ts` (browser), `server.ts` (server), `middleware.ts`
-4. Migrar `proxy.ts` de `clerkMiddleware` a Supabase middleware
-5. Crear login page custom en `/auth/sign-in` con Shadcn
-6. Migraciones SQL: `empresas`, `miembros`, `perfiles`, RLS
-7. hooks: `useUser()` → hook propio de Supabase, `useEmpresa()` para orgs
-8. Auth en pages protegidas con `supabase.auth.getUser()`
+- Repo: `github.com/ignaciobavala-png/rrhhdashboard` (branch `main`)
+- Variables de entorno en Vercel: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Cada push a `main` dispara deploy automático
+- Pre-push hook local corre `pnpm build` antes de pushear
+
+## Issues Conocidos / Pendientes
+
+- Sin autenticación — accesible a cualquiera con la URL (pendiente Supabase Auth)
+- Módulos `documents` y `operations` son placeholders sin funcionalidad
+- API routes `/api/products` y `/api/users` son legacy del starter (no se usan)
+- Archivos `src/constants/mock-api-*.ts` son legacy muertos
+
+## Integración Google Calendar / Gmail (pendiente, no implementada)
+
+Para enviar invitaciones automáticas al crear reuniones:
+1. Google Cloud Console: habilitar Gmail API + Calendar API, crear OAuth 2.0 credentials
+2. El cliente (PetraLabs) crea el proyecto y provee `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`
+3. Implementar OAuth flow en `/api/google/callback`, guardar `refresh_token` en Supabase
+4. Al crear reunión: llamar Gmail API (envía email .ics) + Calendar API (crea evento con asistentes)
 
 ## Contexto Adicional
 
-Proyecto creado el 2026-05-08. Basado en next-shadcn-dashboard-starter.
-Desarrollador: Ignacio Bavala. Stack preferido en perfil-desarrollador del vault Obsidian.
+Proyecto iniciado: 2026-05-08. Basado en next-shadcn-dashboard-starter.
+Desarrollador: Ignacio Bavala (ignaciobavala@gmail.com).
+Primer deploy a Vercel: 2026-05-18.
