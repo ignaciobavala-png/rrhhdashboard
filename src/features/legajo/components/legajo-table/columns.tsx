@@ -208,8 +208,8 @@ export const columns: ColumnDef<Empleado>[] = [
         );
       }
       return (
-        <Badge variant='outline' className={modalidadColors[modalidad] ?? ''}>
-          {modalidadLabels[modalidad] ?? modalidad}
+        <Badge variant='outline' className={modalidadColors[modalidad ?? ''] ?? ''}>
+          {modalidadLabels[modalidad ?? ''] ?? modalidad}
         </Badge>
       );
     },
