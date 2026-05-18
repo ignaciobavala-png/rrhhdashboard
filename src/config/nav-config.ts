@@ -79,14 +79,6 @@ export const navGroups: NavGroup[] = [
     label: 'Configuración',
     items: [
       {
-        title: 'Perfil',
-        url: '/dashboard/profile',
-        icon: 'profile',
-        isActive: false,
-        shortcut: ['p', 'p'],
-        items: []
-      },
-      {
         title: 'Notificaciones',
         url: '/dashboard/notifications',
         icon: 'notification',
