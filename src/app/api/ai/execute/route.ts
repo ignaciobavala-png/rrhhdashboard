@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import type { ExecuteRequest, ExecuteResponse } from '@/features/ai-assistant/api/types';
+
+export const dynamic = 'force-dynamic';
+
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_SERVICE_ROLE_KEY no configurada');
+  return createClient(url, key);
+}
 
 const ALLOWED_TABLES = [
   'empleados',
@@ -31,11 +40,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'action.records requerido' }, { status: 400 });
   }
 
+  const db = getAdminClient();
   let affected = 0;
   let errorMsg: string | undefined;
 
   if (action.type === 'upsert') {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from(action.table as never)
       .upsert(action.records, { onConflict: action.conflict_column ?? 'id' })
       .select();
@@ -44,7 +54,7 @@ export async function POST(request: Request) {
   } else if (action.type === 'update' && action.match_column) {
     for (const record of action.records) {
       const matchVal = record[action.match_column];
-      const { error } = await supabase
+      const { error } = await db
         .from(action.table as never)
         .update(record)
         .eq(action.match_column, matchVal);
@@ -57,7 +67,7 @@ export async function POST(request: Request) {
   } else if (action.type === 'delete' && action.match_column) {
     for (const record of action.records) {
       const matchVal = record[action.match_column];
-      const { error } = await supabase
+      const { error } = await db
         .from(action.table as never)
         .update({ activo: false })
         .eq(action.match_column, matchVal);
