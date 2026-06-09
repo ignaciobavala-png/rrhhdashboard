@@ -99,6 +99,8 @@ import {
   IconUsers,
   IconVideo,
   IconCrown,
+  IconRefresh,
+  IconTableImport,
   IconX
 } from '@tabler/icons-react';
 
@@ -246,5 +248,8 @@ export const Icons = {
   meetings: IconMessage2,
   manuals: IconBook2,
   mobile: IconDeviceMobile,
-  download: IconDownload
+  download: IconDownload,
+  sheets: IconTableImport,
+  refresh: IconRefresh,
+  plus: IconPlus
 };

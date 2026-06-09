@@ -79,6 +79,19 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
+    label: 'Integraciones',
+    items: [
+      {
+        title: 'Google Sheets',
+        url: '/dashboard/google-sheets',
+        icon: 'sheets',
+        isActive: false,
+        shortcut: ['g', 's'],
+        items: []
+      }
+    ]
+  },
+  {
     label: 'Configuración',
     items: [
       {
