@@ -19,7 +19,7 @@ export const navGroups: NavGroup[] = [
     items: [
       {
         title: 'Legajo',
-        url: '/dashboard/legajo',
+        url: '/dashboard/sheets/legajo',
         icon: 'legajo',
         isActive: false,
         shortcut: ['l', 'l'],
@@ -46,7 +46,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         title: 'Sueldos',
-        url: '/dashboard/payroll',
+        url: '/dashboard/sheets/sueldos',
         icon: 'payroll',
         isActive: false,
         shortcut: ['s', 's'],
@@ -59,14 +59,11 @@ export const navGroups: NavGroup[] = [
     items: [
       {
         title: 'Flota',
-        url: '/dashboard/flota/celulares',
+        url: '/dashboard/sheets/flota',
         icon: 'mobile',
         isActive: false,
         shortcut: ['f', 'f'],
-        items: [
-          { title: 'Flota de Celulares', url: '/dashboard/flota/celulares', shortcut: ['f', 'c'] },
-          { title: 'Flota de Laptops', url: '/dashboard/flota/laptops', shortcut: ['f', 'l'] }
-        ]
+        items: []
       },
       {
         title: 'Expedientes',

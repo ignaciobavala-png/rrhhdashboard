@@ -33,7 +33,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 import { OrgSwitcher } from '../org-switcher';
-import { DynamicNavSections } from './dynamic-nav-sections';
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -105,7 +104,6 @@ export default function AppSidebar() {
             </SidebarMenu>
           </SidebarGroup>
         ))}
-        <DynamicNavSections />
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

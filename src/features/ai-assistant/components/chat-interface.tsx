@@ -75,16 +75,25 @@ function MessageBubble({
 type Props = {
   onLogEntry?: (entry: Omit<LogEntry, 'id'>) => void;
   onLogActionUpdate?: (entryId: string, action: ProposedAction) => void;
+  initialSessionId?: string | null;
+  initialMessages?: ChatMessage[];
+  onSessionCreated?: (sessionId: string) => void;
 };
 
-export function ChatInterface({ onLogEntry, onLogActionUpdate }: Props) {
+export function ChatInterface({
+  onLogEntry,
+  onLogActionUpdate,
+  initialSessionId,
+  initialMessages,
+  onSessionCreated
+}: Props) {
   const [mode, setMode] = useState<AssistantMode>('chat');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages ?? []);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [executingId, setExecutingId] = useState<string | null>(null);
   const logEntryIdRef = useRef<string | null>(null);
-  const sessionIdRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(initialSessionId ?? null);
   const dbUserMsgIdRef = useRef<string | null>(null);
   const dbAssistantMsgIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -128,6 +137,7 @@ export function ChatInterface({ onLogEntry, onLogActionUpdate }: Props) {
         if (!sessionIdRef.current) {
           const session = await createSession(mode);
           sessionIdRef.current = session.id;
+          onSessionCreated?.(session.id);
         }
         const dbMsg = await saveMessage(sessionIdRef.current, 'user', content);
         dbUserMsgIdRef.current = dbMsg.id;
@@ -203,7 +213,7 @@ export function ChatInterface({ onLogEntry, onLogActionUpdate }: Props) {
     } finally {
       setIsStreaming(false);
     }
-  }, [input, isStreaming, messages, mode, onLogEntry, onLogActionUpdate]);
+  }, [input, isStreaming, messages, mode, onLogEntry, onLogActionUpdate, onSessionCreated]);
 
   const approveAction = useCallback(
     async (msgId: string, action: ProposedAction) => {
