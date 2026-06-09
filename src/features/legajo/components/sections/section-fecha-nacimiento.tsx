@@ -17,7 +17,7 @@ export function SectionFechaNacimiento({ empleadoId, fechaNacimiento }: Props) {
   const [saving, setSaving] = useState(false);
 
   const edad = fechaNacimiento
-    ? Math.floor((Date.now() - new Date(fechaNacimiento).getTime()) / 31557600000)
+    ? Math.floor((Date.now() - new Date(fechaNacimiento + 'T00:00:00').getTime()) / 31557600000)
     : null;
 
   const handleSave = async () => {
@@ -54,7 +54,9 @@ export function SectionFechaNacimiento({ empleadoId, fechaNacimiento }: Props) {
           <div className='flex justify-between'>
             <span className='text-muted-foreground'>Fecha</span>
             <span>
-              {fechaNacimiento ? new Date(fechaNacimiento).toLocaleDateString('es-AR') : '—'}
+              {fechaNacimiento
+                ? new Date(fechaNacimiento + 'T00:00:00').toLocaleDateString('es-AR')
+                : '—'}
             </span>
           </div>
           <div className='flex justify-between'>

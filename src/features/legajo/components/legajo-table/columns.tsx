@@ -140,7 +140,7 @@ export const columns: ColumnDef<Empleado>[] = [
       if (!val) return SIN_INFO;
       return (
         <span className='text-xs'>
-          {new Date(val).toLocaleDateString('es-AR', {
+          {new Date(val + 'T00:00:00').toLocaleDateString('es-AR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric'
@@ -237,7 +237,7 @@ export const columns: ColumnDef<Empleado>[] = [
       if (!val) return SIN_INFO;
       return (
         <span className='text-xs'>
-          {new Date(val).toLocaleDateString('es-AR', {
+          {new Date(val + 'T00:00:00').toLocaleDateString('es-AR', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric'
