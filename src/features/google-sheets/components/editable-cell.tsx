@@ -36,6 +36,11 @@ export function EditableCell({ rowId, syncId, field, value, type, isEdited }: Pr
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  // Links come from the source sheet — read-only, not editable
+  if (type === 'url' || type === 'email') {
+    return <SmartCell value={value} type={type} />;
+  }
+
   if (editing) {
     return (
       <Input

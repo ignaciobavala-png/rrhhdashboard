@@ -41,11 +41,38 @@ export function SheetDataViewer({ sheetId, url }: Props) {
       result.tabs.forEach((t) => {
         queryClient.invalidateQueries({ queryKey: ['sheet-rows', t.syncId] });
       });
-      queryClient.invalidateQueries({ queryKey: ['calendario', 'sheets-vacaciones'] });
-      const tabCount = result.tabs.length;
-      toast.success(
-        `${tabCount} ${tabCount === 1 ? 'pestaña sincronizada' : 'pestañas sincronizadas'}`
+
+      // Invalidate dashboard queries based on imported sections
+      const sections = new Set(
+        result.tabs.filter((t) => t.suggestedSection).map((t) => t.suggestedSection!)
       );
+      if (sections.has('Legajo') || sections.has('People')) {
+        queryClient.invalidateQueries({ queryKey: ['empleados'] });
+      }
+      if (sections.has('Vacaciones')) {
+        queryClient.invalidateQueries({ queryKey: ['vacaciones'] });
+      }
+      if (sections.has('Sueldos')) {
+        queryClient.invalidateQueries({ queryKey: ['sueldos'] });
+      }
+      if (sections.has('Flota')) {
+        queryClient.invalidateQueries({ queryKey: ['lineas-moviles'] });
+        queryClient.invalidateQueries({ queryKey: ['laptops'] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+
+      // Build toast message with import stats
+      const totalImported = result.tabs.reduce(
+        (acc, t) => acc + (t.importCreated ?? 0) + (t.importUpdated ?? 0),
+        0
+      );
+      const tabCount = result.tabs.length;
+      let msg = `${tabCount} ${tabCount === 1 ? 'pestaña' : 'pestañas'} sincronizada${tabCount === 1 ? '' : 's'}`;
+      if (totalImported > 0) {
+        msg += ` — ${totalImported} registros importados al dashboard`;
+      }
+      toast.success(msg);
     },
     onError: (err: Error) => toast.error(err.message)
   });

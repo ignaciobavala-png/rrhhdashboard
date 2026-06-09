@@ -64,14 +64,20 @@ export type ColumnType =
   | 'currency'
   | 'text';
 
+export type TabSyncResult = {
+  tabName: string;
+  tabGid: number;
+  syncId: string;
+  rowCount: number;
+  headers: string[];
+  suggestedSection: string | null;
+  importCreated?: number;
+  importUpdated?: number;
+  importSkipped?: number;
+  importError?: string;
+  error?: string;
+};
+
 export type SyncResult = {
-  tabs: Array<{
-    tabName: string;
-    tabGid: number;
-    syncId: string;
-    rowCount: number;
-    headers: string[];
-    suggestedSection: string | null;
-    error?: string;
-  }>;
+  tabs: TabSyncResult[];
 };

@@ -66,11 +66,27 @@ export function SheetSectionView({ sectionSlug }: Props) {
       syncIds.forEach((id) => {
         queryClient.invalidateQueries({ queryKey: ['sheet-rows', id] });
       });
-      queryClient.invalidateQueries({ queryKey: ['calendario', 'sheets-vacaciones'] });
-      const tabCount = result.tabs.length;
-      toast.success(
-        `${tabCount} ${tabCount === 1 ? 'pestaña sincronizada' : 'pestañas sincronizadas'}`
+
+      // Invalidate dashboard queries for this section
+      if (sectionName === 'Legajo' || sectionName === 'People')
+        queryClient.invalidateQueries({ queryKey: ['empleados'] });
+      if (sectionName === 'Vacaciones') queryClient.invalidateQueries({ queryKey: ['vacaciones'] });
+      if (sectionName === 'Sueldos') queryClient.invalidateQueries({ queryKey: ['sueldos'] });
+      if (sectionName === 'Flota') {
+        queryClient.invalidateQueries({ queryKey: ['lineas-moviles'] });
+        queryClient.invalidateQueries({ queryKey: ['laptops'] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+
+      const totalImported = result.tabs.reduce(
+        (acc, t) => acc + (t.importCreated ?? 0) + (t.importUpdated ?? 0),
+        0
       );
+      const tabCount = result.tabs.length;
+      let msg = `${tabCount} ${tabCount === 1 ? 'pestaña sincronizada' : 'pestañas sincronizadas'}`;
+      if (totalImported > 0) msg += ` — ${totalImported} registros importados`;
+      toast.success(msg);
     },
     onError: (err: Error) => toast.error(err.message)
   });

@@ -1,0 +1,161 @@
+AUDITORÍA SUPABASE + GOOGLE SHEETS — 2026-06-09
+================================================
+
+1. REGISTROS POR TABLA
+----------------------
+empleados            22
+sueldos             263
+vacaciones           23
+lineas_moviles        7
+flota_laptops         0
+home_office_semanal  55
+manuales             50
+notificaciones       24
+puestos              17
+reuniones             1
+
+
+2. GOOGLE SHEETS CONECTADOS
+----------------------------
+Nombre                       Sheet ID
+---------------------------------------------------------------------------
+Manuales de Procedimiento    14hiCfeKEc2UUxDuTsefw86rxUtvZumk85WEG52HC97g
+Adduntia                     1gwe2fnECO6BHb9E2pCr6p4oXs7HHc0zq
+Sueldos Gestion SL           1J23EX2LNA7AsJV-GxrbVqhG_0vMkhFGx3ndJY-YTr6A
+Informática                  1LLPmq_tTmxsD14-fG3Jvd9hamCHkKpOC4NVy_NKoLLc
+legajo de colaboradores      1tYg7-oogHfZSyEYMlrq5ULmn6mDYk_792QxoGzpPl7M
+
+
+3. PESTAÑAS Y SECCIÓN DETECTADA
+---------------------------------
+CON SECCIÓN:
+  Equipos                          → Flota        (5 syncs)
+  Hoja 1                           → Flota        (3 syncs)  ⚠ debería ser Legajo
+  Legajo                           → Flota        (3 syncs)  ⚠ clasificación incorrecta
+  Legajo                           → Legajo       (3 syncs)  ✓
+  MarianBrian                      → Sueldos      (4 syncs)
+  Sueldos Contexto Investments 20  → Sueldos      (4 syncs)
+  Vacaciones                       → Vacaciones   (6 syncs)
+  Vacaciones 2025                  → Vacaciones   (6 syncs)
+
+SIN SECCIÓN DETECTADA (null):
+  Abril 2026, Admin!, Beneficios, Bonos Junio 2025, Comercial,
+  Consolidado, Enero 2026, Febrero 2026, Forwarders, HO, Hoja 1,
+  Insumos Vajilla, Lineas Móviles, Mails, Marzo 2026, Nombre puestos,
+  Pesos Arg, Regalos cumples!, Seguimiento de tickets, USD, Validacion
+
+NOTA: "Lineas Móviles" debería detectarse como sección Flota — falta el
+keyword en section-detector.ts. "HO" probablemente sea Home Office.
+"Pesos Arg" y "USD" son pestañas de sueldos sin keyword.
+
+
+4. HEADERS POR PESTAÑA (últimas syncs)
+----------------------------------------
+Hoja 1 (legajo de colaboradores):
+  Nombre & Apellido | Activo | Fecha de Nacimiento | DNI | Celular |
+  Contacto Emergencia | Equipo ingreso | Fecha de Ingreso |
+  Mail Contexto | Dirección | Movilidad
+
+Comercial / Admin!:
+  Tarea | Link al manual
+
+Consolidado (Adduntia - revenue):
+  Mes | Moneda | Comisiones | Mark-ups | Trailers | Otros Fees | TOTAL |
+  Check | Contexto | COBRADO | Manu | PAGADO | Retirado x JC | Retirado x MN
+
+Enero 2026 / Febrero 2026 / Marzo 2026 / Abril 2026:
+  Revenue Monthly Details  (una sola columna — tabla dinámica, no apta para import)
+
+Seguimiento de tickets:
+  Nº Ticket | Fecha Alta | Solicitante | Área | Descripción del Problema |
+  Categoría | Prioridad | Estado | Responsable | Fecha Asignación |
+  Fecha Cierre | Días Abierto | Solución / Grado de avance
+
+
+5. ESTRUCTURA TABLAS DE NEGOCIO
+---------------------------------
+empleados:
+  id (bigint), empresa_id (bigint), nombre_apellido (text), activo (bool),
+  fecha_nacimiento (date), dni (text), celular (text),
+  contacto_emergencia (text), equipo_ingreso (text), fecha_ingreso (date),
+  email (text), direccion (text), movilidad (text), modalidad (text)
+
+flota_laptops:
+  id, empresa_id, empleado_id, marca, modelo, numero_serie,
+  estado (NOT NULL), usuario, equipo, ubicacion, comentarios
+
+home_office_semanal:
+  id, empleado_id, dia_semana (text), modalidad (text),
+  fecha_desde (date, NOT NULL), fecha_hasta (date)
+
+lineas_moviles:
+  id, empleado_id, empresa_id, numero (NOT NULL), rol,
+  usuario, equipo, estado (NOT NULL)
+
+sueldos:
+  id, empleado_id, empresa_id, moneda (NOT NULL), mes (int),
+  anio (int), monto (numeric), bono_anual (numeric)
+
+vacaciones:
+  id, empleado_id, anio (int), saldo_inicial (numeric),
+  dias_correspondientes (int), saldo_actual (numeric)
+
+
+6. MAPEO SHEET → TABLA (para import automático)
+-------------------------------------------------
+Pestaña "Hoja 1" → empleados
+  "Nombre & Apellido"    → nombre_apellido
+  "Activo"               → activo (bool: si/no)
+  "Fecha de Nacimiento"  → fecha_nacimiento (date)
+  "DNI"                  → dni
+  "Celular"              → celular
+  "Contacto Emergencia"  → contacto_emergencia
+  "Equipo ingreso"       → equipo_ingreso
+  "Fecha de Ingreso"     → fecha_ingreso (date)
+  "Mail Contexto"        → email
+  "Dirección"            → direccion
+  "Movilidad"            → movilidad
+  FALTA en sheet:        modalidad (completar con default)
+
+Pestañas "Vacaciones" / "Vacaciones 2025" → vacaciones
+  Formato pivot: fila = empleado, columnas = meses (Ene-Dic) = días tomados
+  Se mapea como: empleado_id (lookup por nombre) + anio + saldo_actual
+  YA IMPLEMENTADO parcialmente en getVacacionesDesdeSheets (calendario)
+
+Pestaña "Lineas Móviles" → lineas_moviles
+  SIN sección detectada — agregar keyword "linea" / "movil" al detector
+
+Pestaña "Equipos" (sección Flota) → flota_laptops
+  Headers pendientes de revisar
+
+Pestañas "Pesos Arg" / "USD" → sueldos
+  Estructura a confirmar: ¿filas = empleados, columnas = meses?
+
+Pestañas mensuales Adduntia (Enero/Feb/Marzo/Abril 2026):
+  Una sola columna "Revenue Monthly Details" — formato no importable
+  directamente, es una tabla dinámica/pivot de Google Sheets
+
+Pestaña "HO" → posiblemente home_office_semanal
+  Headers pendientes de confirmar
+
+Pestañas NO aptas para import a dominio:
+  Consolidado, Forwarders, Insumos Vajilla, Regalos cumples!,
+  Validacion, Beneficios, Bonos Junio 2025, Nombre puestos, Mails
+
+
+7. ACCIONES RECOMENDADAS
+--------------------------
+1. Agregar keywords al section-detector:
+     "linea movil" / "celular" → Flota (o nueva sección "Telefonía")
+     "home office" / " ho "    → nueva sección "Asistencia"
+     "pesos" / "usd"           → Sueldos
+
+2. Limpiar syncs con suggested_section incorrecto en DB:
+     UPDATE sheet_syncs SET suggested_section = 'Legajo'
+     WHERE tab_name = 'Hoja 1'
+     AND sheet_id = (SELECT id FROM google_sheets WHERE name ILIKE '%legajo%');
+
+3. Implementar import Legajo → empleados (mapeo 1:1 disponible arriba)
+
+4. flota_laptops tiene 0 registros — la pestaña "Equipos" tiene datos,
+   pendiente revisar sus headers y hacer el import.

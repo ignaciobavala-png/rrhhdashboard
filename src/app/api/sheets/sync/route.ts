@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { extractSheetId } from '@/features/google-sheets/api/service';
 import { suggestSection } from '@/features/google-sheets/lib/section-detector';
+import { importSheetData } from '@/features/google-sheets/lib/import-engine';
 import type { SyncResult } from '@/features/google-sheets/api/types';
 
 type ParsedTab = {
@@ -25,21 +26,41 @@ async function parseXlsxFromGoogle(googleSheetId: string): Promise<ParsedTab[]> 
 
   return workbook.SheetNames.map((name, index) => {
     const sheet = workbook.Sheets[name];
-    const raw = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+    const ref = sheet['!ref'];
+    if (!ref) return { name, index, headers: [], rows: [] };
 
-    const headers = (raw[0] ?? []).map((h) => String(h).trim()).filter(Boolean);
+    const range = XLSX.utils.decode_range(ref);
+
+    // Extract headers from first row
+    const headers: string[] = [];
+    for (let c = range.s.c; c <= range.e.c; c++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c })];
+      const val = cell ? String(XLSX.utils.format_cell(cell)).trim() : '';
+      if (val) headers.push(val);
+    }
     if (headers.length === 0) return { name, index, headers: [], rows: [] };
 
-    const rows = (raw.slice(1) as unknown[][])
-      .filter((row) => row.some((v) => v !== '' && v !== null && v !== undefined))
-      .map((row) => {
-        const obj: Record<string, string> = {};
-        headers.forEach((h, i) => {
-          const val = row[i];
-          obj[h] = val instanceof Date ? val.toLocaleDateString('es-AR') : String(val ?? '').trim();
-        });
-        return obj;
-      });
+    // Extract rows — prefer cell.l.Target (hyperlink URL) over display text
+    const rows: Record<string, string>[] = [];
+    for (let r = range.s.r + 1; r <= range.e.r; r++) {
+      const obj: Record<string, string> = {};
+      let hasValue = false;
+      for (let ci = 0; ci < headers.length; ci++) {
+        const cell = sheet[XLSX.utils.encode_cell({ r, c: range.s.c + ci })];
+        if (!cell) {
+          obj[headers[ci]] = '';
+          continue;
+        }
+        const val =
+          cell.l?.Target ??
+          (cell.t === 'd'
+            ? (cell.v as Date).toLocaleDateString('es-AR')
+            : String(XLSX.utils.format_cell(cell)).trim());
+        obj[headers[ci]] = val;
+        if (val) hasValue = true;
+      }
+      if (hasValue) rows.push(obj);
+    }
 
     return { name, index, headers, rows };
   });
@@ -127,6 +148,27 @@ export async function POST(request: Request) {
       headers: tab.headers,
       suggestedSection
     });
+
+    // ── Importar a tabla de negocio ─────────────────────────────────────────
+    if (suggestedSection) {
+      try {
+        const importResult = await importSheetData(
+          suggestedSection,
+          tab.rows,
+          tab.headers,
+          tab.name
+        );
+        if (importResult) {
+          const last = result.tabs[result.tabs.length - 1];
+          last.importCreated = importResult.created;
+          last.importUpdated = importResult.updated;
+          last.importSkipped = importResult.skipped;
+        }
+      } catch (importError) {
+        const last = result.tabs[result.tabs.length - 1];
+        last.importError = (importError as Error).message;
+      }
+    }
   }
 
   return NextResponse.json(result);

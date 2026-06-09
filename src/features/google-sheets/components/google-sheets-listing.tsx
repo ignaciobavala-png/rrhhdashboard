@@ -15,14 +15,16 @@ import { toast } from 'sonner';
 import { getGoogleSheets, deleteGoogleSheet } from '../api/service';
 import { AddSheetDialog } from './add-sheet-dialog';
 import { SheetDataViewer } from './sheet-data-viewer';
-import type { GoogleSheet } from '../api/types';
+import type { GoogleSheet, SyncResult } from '../api/types';
 
-async function triggerSync(sheetId: string, url: string) {
-  await fetch('/api/sheets/sync', {
+async function triggerSync(sheetId: string, url: string): Promise<SyncResult> {
+  const res = await fetch('/api/sheets/sync', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sheetId, url })
   });
+  if (!res.ok) throw new Error('Error al sincronizar');
+  return res.json();
 }
 
 export function GoogleSheetsListing() {
@@ -44,21 +46,56 @@ export function GoogleSheetsListing() {
   });
 
   const handleAdded = async (sheet: GoogleSheet) => {
-    await triggerSync(sheet.id, sheet.url);
-    queryClient.invalidateQueries({ queryKey: ['sheet-syncs', sheet.id] });
-    queryClient.invalidateQueries({ queryKey: ['calendario', 'sheets-vacaciones'] });
+    try {
+      const result = await triggerSync(sheet.id, sheet.url);
+      queryClient.invalidateQueries({ queryKey: ['sheet-syncs', sheet.id] });
+      queryClient.invalidateQueries({ queryKey: ['calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+
+      let totalImported = 0;
+      for (const t of result.tabs) {
+        totalImported += (t.importCreated ?? 0) + (t.importUpdated ?? 0);
+      }
+      const tabCount = result.tabs.length;
+      let msg = `Sheet agregado — ${tabCount} ${tabCount === 1 ? 'pestaña' : 'pestañas'} sincronizada${tabCount === 1 ? '' : 's'}`;
+      if (totalImported > 0) msg += `, ${totalImported} registros importados`;
+      toast.success(msg);
+    } catch {
+      toast.error('Error al sincronizar el sheet');
+    }
   };
 
   const handleSyncAll = async () => {
     if (sheets.length === 0) return;
     setSyncingAll(true);
     try {
-      await Promise.all(sheets.map((s) => triggerSync(s.id, s.url)));
+      const results = await Promise.all(sheets.map((s) => triggerSync(s.id, s.url)));
       sheets.forEach((s) => queryClient.invalidateQueries({ queryKey: ['sheet-syncs', s.id] }));
-      queryClient.invalidateQueries({ queryKey: ['calendario', 'sheets-vacaciones'] });
-      toast.success(
-        `${sheets.length} ${sheets.length === 1 ? 'sheet sincronizado' : 'sheets sincronizados'}`
-      );
+
+      // Count total imported
+      let totalImported = 0;
+      const sections = new Set<string>();
+      for (const r of results) {
+        for (const t of r.tabs) {
+          totalImported += (t.importCreated ?? 0) + (t.importUpdated ?? 0);
+          if (t.suggestedSection) sections.add(t.suggestedSection);
+        }
+      }
+
+      if (sections.has('Legajo') || sections.has('People'))
+        queryClient.invalidateQueries({ queryKey: ['empleados'] });
+      if (sections.has('Vacaciones')) queryClient.invalidateQueries({ queryKey: ['vacaciones'] });
+      if (sections.has('Sueldos')) queryClient.invalidateQueries({ queryKey: ['sueldos'] });
+      if (sections.has('Flota')) {
+        queryClient.invalidateQueries({ queryKey: ['lineas-moviles'] });
+        queryClient.invalidateQueries({ queryKey: ['laptops'] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['calendario'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+
+      let msg = `${sheets.length} ${sheets.length === 1 ? 'sheet sincronizado' : 'sheets sincronizados'}`;
+      if (totalImported > 0) msg += ` — ${totalImported} registros importados`;
+      toast.success(msg);
     } catch {
       toast.error('Error al sincronizar');
     } finally {
