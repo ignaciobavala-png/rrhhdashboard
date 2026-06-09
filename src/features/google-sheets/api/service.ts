@@ -21,16 +21,22 @@ export async function deleteGoogleSheet(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-export async function getLatestSync(sheetId: string): Promise<SheetSync | null> {
+// Returns the latest sync per tab for a given sheet
+export async function getLatestSyncsByTab(sheetId: string): Promise<SheetSync[]> {
   const { data, error } = await supabase
     .from('sheet_syncs')
     .select('*')
     .eq('sheet_id', sheetId)
-    .order('synced_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order('synced_at', { ascending: false });
   if (error) throw new Error(error.message);
-  return data as SheetSync | null;
+
+  // Deduplicate: keep only the most recent sync per tab
+  const seen = new Set<string>();
+  return ((data ?? []) as SheetSync[]).filter((s) => {
+    if (seen.has(s.tab_name)) return false;
+    seen.add(s.tab_name);
+    return true;
+  });
 }
 
 export async function getRowsForSync(syncId: string): Promise<SheetRow[]> {
@@ -46,8 +52,4 @@ export async function getRowsForSync(syncId: string): Promise<SheetRow[]> {
 export function extractSheetId(url: string): string | null {
   const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
   return match?.[1] ?? null;
-}
-
-export function buildCsvUrl(sheetId: string): string {
-  return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
 }

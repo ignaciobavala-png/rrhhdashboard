@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { extractSheetId, buildCsvUrl } from '@/features/google-sheets/api/service';
+import { extractSheetId } from '@/features/google-sheets/api/service';
+import { discoverTabs, buildCsvUrl } from '@/features/google-sheets/lib/tab-discovery';
+import { suggestSection } from '@/features/google-sheets/lib/section-detector';
 import type { ParsedSheet, SyncResult } from '@/features/google-sheets/api/types';
 
 function parseCsv(text: string): ParsedSheet {
@@ -55,70 +57,102 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'URL de Google Sheets inválida' }, { status: 400 });
   }
 
-  // Fetch CSV
-  let parsed: ParsedSheet;
-  try {
-    const res = await fetch(buildCsvUrl(googleSheetId));
-    if (!res.ok) {
-      const { data: sync } = await supabase
-        .from('sheet_syncs')
-        .insert({
-          sheet_id: sheetId,
-          row_count: 0,
+  // Discover all tabs
+  const tabs = await discoverTabs(googleSheetId);
+
+  const result: SyncResult = { tabs: [] };
+
+  for (const tab of tabs) {
+    let parsed: ParsedSheet;
+
+    try {
+      const res = await fetch(buildCsvUrl(googleSheetId, tab.gid));
+      if (!res.ok) {
+        const { data: sync } = await supabase
+          .from('sheet_syncs')
+          .insert({
+            sheet_id: sheetId,
+            row_count: 0,
+            headers: [],
+            tab_name: tab.name,
+            tab_gid: tab.gid,
+            error: 'No se pudo acceder al sheet. Verificá que esté publicado.'
+          })
+          .select()
+          .single();
+        result.tabs.push({
+          tabName: tab.name,
+          tabGid: tab.gid,
+          syncId: sync?.id ?? '',
+          rowCount: 0,
           headers: [],
-          error: 'No se pudo acceder al sheet. Verificá que esté publicado.'
-        })
-        .select()
-        .single();
-      return NextResponse.json(
-        { error: 'No se pudo acceder al sheet', syncId: sync?.id },
-        { status: 502 }
-      );
+          suggestedSection: null,
+          error: 'No se pudo acceder'
+        });
+        continue;
+      }
+      const text = await res.text();
+      parsed = parseCsv(text);
+    } catch {
+      result.tabs.push({
+        tabName: tab.name,
+        tabGid: tab.gid,
+        syncId: '',
+        rowCount: 0,
+        headers: [],
+        suggestedSection: null,
+        error: 'Error al leer'
+      });
+      continue;
     }
-    const text = await res.text();
-    parsed = parseCsv(text);
-  } catch (e) {
-    return NextResponse.json({ error: 'Error al leer el sheet' }, { status: 500 });
-  }
 
-  // Create sync record
-  const { data: sync, error: syncError } = await supabase
-    .from('sheet_syncs')
-    .insert({
-      sheet_id: sheetId,
-      row_count: parsed.rows.length,
-      headers: parsed.headers
-    })
-    .select()
-    .single();
+    const suggestedSection = suggestSection(parsed.headers);
 
-  if (syncError || !sync) {
-    return NextResponse.json(
-      { error: syncError?.message ?? 'Error al guardar sync' },
-      { status: 500 }
-    );
-  }
+    const { data: sync, error: syncError } = await supabase
+      .from('sheet_syncs')
+      .insert({
+        sheet_id: sheetId,
+        row_count: parsed.rows.length,
+        headers: parsed.headers,
+        tab_name: tab.name,
+        tab_gid: tab.gid,
+        suggested_section: suggestedSection
+      })
+      .select()
+      .single();
 
-  // Bulk insert rows
-  if (parsed.rows.length > 0) {
-    const rowInserts = parsed.rows.map((data, row_index) => ({
-      sync_id: sync.id,
-      sheet_id: sheetId,
-      row_index,
-      data
-    }));
-
-    const { error: rowsError } = await supabase.from('sheet_rows').insert(rowInserts);
-    if (rowsError) {
-      return NextResponse.json({ error: rowsError.message }, { status: 500 });
+    if (syncError || !sync) {
+      result.tabs.push({
+        tabName: tab.name,
+        tabGid: tab.gid,
+        syncId: '',
+        rowCount: 0,
+        headers: [],
+        suggestedSection: null,
+        error: syncError?.message
+      });
+      continue;
     }
-  }
 
-  const result: SyncResult = {
-    syncId: sync.id,
-    rowCount: parsed.rows.length,
-    headers: parsed.headers
-  };
+    if (parsed.rows.length > 0) {
+      const rowInserts = parsed.rows.map((data, row_index) => ({
+        sync_id: sync.id,
+        sheet_id: sheetId,
+        row_index,
+        data
+      }));
+      await supabase.from('sheet_rows').insert(rowInserts);
+    }
+
+    result.tabs.push({
+      tabName: tab.name,
+      tabGid: tab.gid,
+      syncId: sync.id,
+      rowCount: parsed.rows.length,
+      headers: parsed.headers,
+      suggestedSection
+    });
+  }
 
   return NextResponse.json(result);
 }

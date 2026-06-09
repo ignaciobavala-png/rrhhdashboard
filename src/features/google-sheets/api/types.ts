@@ -19,6 +19,9 @@ export type SheetSync = {
   row_count: number;
   headers: string[];
   error: string | null;
+  tab_name: string;
+  tab_gid: number;
+  suggested_section: string | null;
 };
 
 export type SheetRow = {
@@ -29,10 +32,14 @@ export type SheetRow = {
   data: Record<string, string>;
 };
 
-// Raw CSV parsed before persisting
 export type ParsedSheet = {
   headers: string[];
   rows: Record<string, string>[];
+};
+
+export type SheetTab = {
+  gid: number;
+  name: string;
 };
 
 export type ColumnType =
@@ -46,8 +53,13 @@ export type ColumnType =
   | 'text';
 
 export type SyncResult = {
-  syncId: string;
-  rowCount: number;
-  headers: string[];
-  error?: string;
+  tabs: Array<{
+    tabName: string;
+    tabGid: number;
+    syncId: string;
+    rowCount: number;
+    headers: string[];
+    suggestedSection: string | null;
+    error?: string;
+  }>;
 };
