@@ -3,17 +3,22 @@ import { supabase } from '@/lib/supabase';
 export type AssistantMode = 'chat' | 'build';
 
 export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
-  const [sheetsRes, syncsRes] = await Promise.all([
+  const [sheetsRes, syncsRes, empleadosRes] = await Promise.all([
     supabase.from('google_sheets').select('name, url'),
     supabase
       .from('sheet_syncs')
       .select('tab_name, suggested_section, headers, synced_at')
       .order('synced_at', { ascending: false })
-      .limit(50)
+      .limit(50),
+    supabase
+      .from('empleados')
+      .select('id, nombre_apellido, activo, dni, equipo_ingreso')
+      .order('nombre_apellido')
   ]);
 
   const sheets = sheetsRes.data ?? [];
   const syncs = syncsRes.data ?? [];
+  const empleados = empleadosRes.data ?? [];
 
   // Deduplicate tabs, keep latest
   const tabMap = new Map<string, (typeof syncs)[0]>();
@@ -23,6 +28,13 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
   const latestTabs = [...tabMap.values()];
 
   const sheetList = sheets.map((s) => `  - "${s.name}"`).join('\n');
+
+  const empleadosList = empleados
+    .map(
+      (e) =>
+        `  id=${e.id} | ${e.nombre_apellido}${e.dni ? ` | DNI: ${e.dni}` : ''}${e.equipo_ingreso ? ` | equipo: ${e.equipo_ingreso}` : ''} | ${e.activo ? 'activo' : 'inactivo'}`
+    )
+    .join('\n');
 
   const tabList = latestTabs
     .map(
@@ -107,6 +119,10 @@ Tablas de integración Google Sheets:
 Los sheets son la fuente original de los datos. Se importan a Supabase mediante sync.
 NUNCA se modifican los sheets directamente desde el dashboard.
 Los datos en sheet_rows representan lo que el sheet tenía en el último sync.
+
+## Empleados registrados en Supabase (${empleados.length} total)
+Usá estos IDs para resolver referencias cuando propongas acciones en build mode:
+${empleadosList || '  (sin empleados)'}
 
 ## Google Sheets conectados actualmente
 ${sheetList || '  (ninguno conectado)'}

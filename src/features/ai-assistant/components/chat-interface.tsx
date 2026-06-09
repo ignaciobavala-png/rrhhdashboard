@@ -8,6 +8,7 @@ import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { ActionPreview } from './action-preview';
 import type { ChatMessage, AssistantMode, ProposedAction } from '../api/types';
+import type { LogEntry } from './action-log';
 
 function parseProposedAction(content: string): ProposedAction | null {
   const match = content.match(/```json\s*([\s\S]*?)\s*```/);
@@ -70,12 +71,18 @@ function MessageBubble({
   );
 }
 
-export function ChatInterface() {
+type Props = {
+  onLogEntry?: (entry: Omit<LogEntry, 'id'>) => void;
+  onLogActionUpdate?: (entryId: string, action: ProposedAction) => void;
+};
+
+export function ChatInterface({ onLogEntry, onLogActionUpdate }: Props) {
   const [mode, setMode] = useState<AssistantMode>('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [executingId, setExecutingId] = useState<string | null>(null);
+  const logEntryIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -105,6 +112,11 @@ export function ChatInterface() {
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setInput('');
     setIsStreaming(true);
+
+    // Register in log
+    const logId = crypto.randomUUID();
+    logEntryIdRef.current = logId;
+    onLogEntry?.({ timestamp: new Date(), mode, userMessage: content });
 
     try {
       const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
@@ -154,6 +166,9 @@ export function ChatInterface() {
           setMessages((prev) =>
             prev.map((m) => (m.id === assistantMsgId ? { ...m, pendingAction: action } : m))
           );
+          if (logEntryIdRef.current) {
+            onLogActionUpdate?.(logEntryIdRef.current, action);
+          }
         }
       }
     } catch (err) {
@@ -162,50 +177,62 @@ export function ChatInterface() {
     } finally {
       setIsStreaming(false);
     }
-  }, [input, isStreaming, messages, mode]);
+  }, [input, isStreaming, messages, mode, onLogEntry, onLogActionUpdate]);
 
-  const approveAction = useCallback(async (msgId: string, action: ProposedAction) => {
-    setExecutingId(msgId);
-
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === msgId && m.pendingAction
-          ? { ...m, pendingAction: { ...m.pendingAction, status: 'approved' } }
-          : m
-      )
-    );
-
-    try {
-      const res = await fetch('/api/ai/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
-      });
-      const result = await res.json();
+  const approveAction = useCallback(
+    async (msgId: string, action: ProposedAction) => {
+      setExecutingId(msgId);
 
       setMessages((prev) =>
         prev.map((m) =>
           m.id === msgId && m.pendingAction
-            ? {
-                ...m,
-                pendingAction: {
-                  ...m.pendingAction,
-                  status: result.error ? 'error' : 'executed',
-                  result
-                }
-              }
+            ? { ...m, pendingAction: { ...m.pendingAction, status: 'approved' } }
             : m
         )
       );
 
-      if (result.error) toast.error(result.error);
-      else toast.success(`${result.affected} registros actualizados`);
-    } catch (err) {
-      toast.error((err as Error).message);
-    } finally {
-      setExecutingId(null);
-    }
-  }, []);
+      try {
+        const res = await fetch('/api/ai/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        });
+        const result = await res.json();
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msgId && m.pendingAction
+              ? {
+                  ...m,
+                  pendingAction: {
+                    ...m.pendingAction,
+                    status: result.error ? 'error' : 'executed',
+                    result
+                  }
+                }
+              : m
+          )
+        );
+
+        if (result.error) toast.error(result.error);
+        else toast.success(`${result.affected} registros actualizados`);
+
+        // Update log with final action state
+        if (logEntryIdRef.current) {
+          onLogActionUpdate?.(logEntryIdRef.current, {
+            ...action,
+            status: result.error ? 'error' : 'executed',
+            result
+          });
+        }
+      } catch (err) {
+        toast.error((err as Error).message);
+      } finally {
+        setExecutingId(null);
+      }
+    },
+    [onLogActionUpdate]
+  );
 
   const rejectAction = useCallback((msgId: string) => {
     setMessages((prev) =>
