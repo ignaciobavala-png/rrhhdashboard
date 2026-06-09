@@ -10,7 +10,9 @@ const SECTION_KEYWORDS: [string, string[]][] = [
       'dias_tomados',
       'dias_disponibles',
       'dias_libre',
-      'permiso'
+      'permiso',
+      'saldo',
+      'goce'
     ]
   ],
   [
@@ -45,11 +47,13 @@ const SECTION_KEYWORDS: [string, string[]][] = [
       'remuneracion',
       'descuento',
       'adicional',
-      'pesos',
-      'usd',
-      'moneda',
       'bono',
-      'monto'
+      'monto',
+      // Require "nombre" or "empleado" together with financial keywords
+      // — intentionally NOT including 'moneda' or 'pesos' alone since
+      // those appear in non-salary financial sheets too
+      'sueldo',
+      'salario'
     ]
   ],
   [
@@ -63,7 +67,18 @@ const SECTION_KEYWORDS: [string, string[]][] = [
       'hora_salida',
       'fichaje',
       'home_office',
-      'dia_semana'
+      'dia_semana',
+      // Single-letter day columns (HO sheet: Lu Ma Mi Ju Vi)
+      'lunes',
+      'martes',
+      'miercoles',
+      'jueves',
+      'viernes',
+      'lu',
+      'ma',
+      'mi',
+      'ju',
+      'vi'
     ]
   ],
   [
@@ -72,7 +87,6 @@ const SECTION_KEYWORDS: [string, string[]][] = [
       'celular',
       'laptop',
       'dispositivo',
-      'equipo',
       'numero_serie',
       'imei',
       'modelo',
@@ -81,7 +95,11 @@ const SECTION_KEYWORDS: [string, string[]][] = [
       'movil',
       'numero',
       'telefono',
-      'asignado'
+      'asignado',
+      'procesador',
+      'ram',
+      'bios',
+      'fabricante'
     ]
   ],
   [
@@ -90,11 +108,15 @@ const SECTION_KEYWORDS: [string, string[]][] = [
   ]
 ];
 
+// Keywords that belong to Flota but NOT Legajo — prevents "equipo ingreso" from
+// scoring for Flota when it clearly means employee team, not device assignment
+const FLOTA_REQUIRES_NON_EMPLOYEE = true;
+
 function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '');
 }
@@ -105,30 +127,56 @@ function matchesKeyword(normalizedHeader: string, keyword: string): boolean {
   return keywordTokens.every((kt) => headerTokens.some((ht) => ht.includes(kt)));
 }
 
+// Minimum header-keyword matches required to classify (prevents false positives
+// from tabs that have one generic matching column like "moneda" or "equipo")
+const MIN_SCORE = 2;
+
 export function suggestSection(headers: string[], tabName?: string): string | null {
   const normalized = headers.map(normalize);
+
+  // Tab name exact / strong match takes absolute priority
+  if (tabName) {
+    const normalizedTab = normalize(tabName);
+    for (const [section, keywords] of SECTION_KEYWORDS) {
+      const tabScore = keywords.filter((kw) => matchesKeyword(normalizedTab, kw)).length;
+      if (tabScore >= 2) return section;
+    }
+  }
 
   let bestSection: string | null = null;
   let bestScore = 0;
 
   for (const [section, keywords] of SECTION_KEYWORDS) {
-    const score = keywords.filter((kw) => normalized.some((h) => matchesKeyword(h, kw))).length;
+    let score = keywords.filter((kw) => normalized.some((h) => matchesKeyword(h, kw))).length;
+
+    // Flota: "equipo" in a clearly employee-data context (has dni/nombre/fecha_ingreso)
+    // should NOT score for Flota. Penalise if strong Legajo signals also present.
+    if (FLOTA_REQUIRES_NON_EMPLOYEE && section === 'Flota') {
+      const legajoSignals = ['dni', 'nacimiento', 'fecha_ingreso', 'contacto_emergencia'];
+      const hasStrongLegajo = legajoSignals.some((kw) =>
+        normalized.some((h) => matchesKeyword(h, kw))
+      );
+      if (hasStrongLegajo) score = 0;
+    }
+
     if (score > bestScore) {
       bestScore = score;
       bestSection = section;
     }
   }
 
-  // Tab name takes priority when headers give weak evidence (score < 2)
-  if (tabName) {
-    const normalizedTab = normalize(tabName);
-    for (const [section, keywords] of SECTION_KEYWORDS) {
-      if (keywords.some((kw) => matchesKeyword(normalizedTab, kw))) {
-        if (bestScore < 2) return section;
-        break;
+  // Require at least MIN_SCORE header matches; otherwise try tab name as weak signal
+  if (bestScore < MIN_SCORE) {
+    if (tabName) {
+      const normalizedTab = normalize(tabName);
+      for (const [section, keywords] of SECTION_KEYWORDS) {
+        if (keywords.some((kw) => matchesKeyword(normalizedTab, kw))) {
+          return section;
+        }
       }
     }
+    return null;
   }
 
-  return bestScore > 0 ? bestSection : null;
+  return bestSection;
 }

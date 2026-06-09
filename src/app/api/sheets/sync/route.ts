@@ -128,16 +128,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Remove any previous classification for this (sheet, tab) pair — ensures
+    // each tab belongs to exactly one section and reclassifications take effect.
+    await supabase.from('sheet_sections').delete().eq('sheet_id', sheetId).eq('tab_name', tab.name);
+
     if (suggestedSection) {
-      await supabase.from('sheet_sections').upsert(
-        {
-          section_name: suggestedSection,
-          sheet_id: sheetId,
-          sync_id: sync.id,
-          tab_name: tab.name
-        },
-        { onConflict: 'section_name,sheet_id,tab_name' }
-      );
+      await supabase.from('sheet_sections').insert({
+        section_name: suggestedSection,
+        sheet_id: sheetId,
+        sync_id: sync.id,
+        tab_name: tab.name
+      });
     }
 
     result.tabs.push({
