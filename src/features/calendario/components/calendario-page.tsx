@@ -32,6 +32,7 @@ import {
   getEmpleadosActivos,
   registrarVacaciones
 } from '@/features/calendario/api/service';
+import { getVacacionesDesdeSheets } from '@/features/calendario/api/sheet-integration';
 import { getTodasLasReuniones } from '@/features/reuniones/api/service';
 import type { EventoCalendario } from '@/features/calendario/api/types';
 import type { Reunion } from '@/features/reuniones/api/types';
@@ -91,6 +92,11 @@ export default function CalendarioPage() {
   const { data: reunionesData = [] } = useQuery({
     queryKey: ['calendario', 'reuniones'],
     queryFn: getTodasLasReuniones
+  });
+
+  const { data: vacSheets = [] } = useQuery({
+    queryKey: ['calendario', 'sheets-vacaciones'],
+    queryFn: getVacacionesDesdeSheets
   });
 
   const viewYear = getYear(currentMonth);
@@ -171,8 +177,12 @@ export default function CalendarioPage() {
       });
     }
 
+    for (const ev of vacSheets) {
+      result.push(ev);
+    }
+
     return result;
-  }, [vacDias, eventosRows, empleados, viewYear, reunionesData]);
+  }, [vacDias, eventosRows, empleados, viewYear, reunionesData, vacSheets]);
 
   const allEventos = useMemo(
     () => [...eventosBase, ...manualEventos],

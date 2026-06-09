@@ -46,6 +46,7 @@ export function GoogleSheetsListing() {
   const handleAdded = async (sheet: GoogleSheet) => {
     await triggerSync(sheet.id, sheet.url);
     queryClient.invalidateQueries({ queryKey: ['sheet-syncs', sheet.id] });
+    queryClient.invalidateQueries({ queryKey: ['calendario', 'sheets-vacaciones'] });
   };
 
   const handleSyncAll = async () => {
@@ -54,6 +55,7 @@ export function GoogleSheetsListing() {
     try {
       await Promise.all(sheets.map((s) => triggerSync(s.id, s.url)));
       sheets.forEach((s) => queryClient.invalidateQueries({ queryKey: ['sheet-syncs', s.id] }));
+      queryClient.invalidateQueries({ queryKey: ['calendario', 'sheets-vacaciones'] });
       toast.success(
         `${sheets.length} ${sheets.length === 1 ? 'sheet sincronizado' : 'sheets sincronizados'}`
       );

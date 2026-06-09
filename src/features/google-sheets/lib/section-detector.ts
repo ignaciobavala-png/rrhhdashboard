@@ -43,7 +43,7 @@ function normalize(text: string): string {
     .replace(/[^a-z0-9]/g, '_');
 }
 
-export function suggestSection(headers: string[]): string | null {
+export function suggestSection(headers: string[], tabName?: string): string | null {
   const normalized = headers.map(normalize);
 
   let bestSection: string | null = null;
@@ -57,6 +57,16 @@ export function suggestSection(headers: string[]): string | null {
     }
   }
 
-  // Only suggest if at least one keyword matched
+  // Tab name takes priority when headers give weak evidence (score < 2)
+  if (tabName) {
+    const normalizedTab = normalize(tabName);
+    for (const [section, keywords] of SECTION_KEYWORDS) {
+      if (keywords.some((kw) => normalizedTab.includes(kw))) {
+        if (bestScore < 2) return section;
+        break;
+      }
+    }
+  }
+
   return bestScore > 0 ? bestSection : null;
 }

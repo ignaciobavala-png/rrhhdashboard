@@ -143,6 +143,7 @@ export function SheetDataViewer({ sheetId, url }: Props) {
       result.tabs.forEach((t) => {
         queryClient.invalidateQueries({ queryKey: ['sheet-rows', t.syncId] });
       });
+      queryClient.invalidateQueries({ queryKey: ['calendario', 'sheets-vacaciones'] });
       const tabCount = result.tabs.length;
       toast.success(
         `${tabCount} ${tabCount === 1 ? 'pestaña sincronizada' : 'pestañas sincronizadas'}`

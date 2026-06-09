@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   const result: SyncResult = { tabs: [] };
 
   for (const tab of tabs) {
-    const suggestedSection = tab.headers.length > 0 ? suggestSection(tab.headers) : null;
+    const suggestedSection = suggestSection(tab.headers, tab.name);
 
     const { data: sync, error: syncError } = await supabase
       .from('sheet_syncs')
