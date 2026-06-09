@@ -1,47 +1,48 @@
 import { NextResponse } from 'next/server';
+import * as XLSX from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import { extractSheetId } from '@/features/google-sheets/api/service';
-import { discoverTabs, buildCsvUrl } from '@/features/google-sheets/lib/tab-discovery';
 import { suggestSection } from '@/features/google-sheets/lib/section-detector';
-import type { ParsedSheet, SyncResult } from '@/features/google-sheets/api/types';
+import type { SyncResult } from '@/features/google-sheets/api/types';
 
-function parseCsv(text: string): ParsedSheet {
-  const lines = text.split('\n').filter((l) => l.trim() !== '');
-  if (lines.length === 0) return { headers: [], rows: [] };
+type ParsedTab = {
+  name: string;
+  index: number;
+  headers: string[];
+  rows: Record<string, string>[];
+};
 
-  const parseRow = (line: string): string[] => {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else inQuotes = !inQuotes;
-      } else if (ch === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += ch;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  };
+async function parseXlsxFromGoogle(googleSheetId: string): Promise<ParsedTab[]> {
+  const url = `https://docs.google.com/spreadsheets/d/${googleSheetId}/export?format=xlsx`;
+  const res = await fetch(url, { next: { revalidate: 0 } });
+  if (!res.ok)
+    throw new Error(
+      'No se pudo descargar el sheet. Verificá que esté compartido como "Cualquiera con el enlace puede ver".'
+    );
 
-  const headers = parseRow(lines[0]);
-  const rows = lines.slice(1).map((line) => {
-    const values = parseRow(line);
-    const row: Record<string, string> = {};
-    headers.forEach((h, i) => {
-      row[h] = values[i] ?? '';
-    });
-    return row;
+  const buffer = await res.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+
+  return workbook.SheetNames.map((name, index) => {
+    const sheet = workbook.Sheets[name];
+    const raw = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' });
+
+    const headers = (raw[0] ?? []).map((h) => String(h).trim()).filter(Boolean);
+    if (headers.length === 0) return { name, index, headers: [], rows: [] };
+
+    const rows = (raw.slice(1) as unknown[][])
+      .filter((row) => row.some((v) => v !== '' && v !== null && v !== undefined))
+      .map((row) => {
+        const obj: Record<string, string> = {};
+        headers.forEach((h, i) => {
+          const val = row[i];
+          obj[h] = val instanceof Date ? val.toLocaleDateString('es-AR') : String(val ?? '').trim();
+        });
+        return obj;
+      });
+
+    return { name, index, headers, rows };
   });
-
-  return { headers, rows };
 }
 
 export async function POST(request: Request) {
@@ -57,67 +58,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'URL de Google Sheets inválida' }, { status: 400 });
   }
 
-  // Discover all tabs
-  const tabs = await discoverTabs(googleSheetId);
+  let tabs: ParsedTab[];
+  try {
+    tabs = await parseXlsxFromGoogle(googleSheetId);
+  } catch (err) {
+    return NextResponse.json({ error: (err as Error).message }, { status: 400 });
+  }
 
-  // Fetch all CSVs in parallel
-  const csvResults = await Promise.all(
-    tabs.map(async (tab) => {
-      try {
-        const res = await fetch(buildCsvUrl(googleSheetId, tab.gid));
-        if (!res.ok)
-          return {
-            tab,
-            parsed: null,
-            error: 'No se pudo acceder al sheet. Verificá que esté publicado.'
-          };
-        const text = await res.text();
-        return { tab, parsed: parseCsv(text), error: null };
-      } catch {
-        return { tab, parsed: null, error: 'Error al leer la pestaña' };
-      }
-    })
-  );
-
-  // Persist syncs sequentially (Supabase insert per tab)
   const result: SyncResult = { tabs: [] };
 
-  for (const { tab, parsed, error } of csvResults) {
-    if (!parsed || error) {
-      const { data: sync } = await supabase
-        .from('sheet_syncs')
-        .insert({
-          sheet_id: sheetId,
-          row_count: 0,
-          headers: [],
-          tab_name: tab.name,
-          tab_gid: tab.gid,
-          error
-        })
-        .select()
-        .single();
-      result.tabs.push({
-        tabName: tab.name,
-        tabGid: tab.gid,
-        syncId: sync?.id ?? '',
-        rowCount: 0,
-        headers: [],
-        suggestedSection: null,
-        error: error ?? undefined
-      });
-      continue;
-    }
-
-    const suggestedSection = suggestSection(parsed.headers);
+  for (const tab of tabs) {
+    const suggestedSection = tab.headers.length > 0 ? suggestSection(tab.headers) : null;
 
     const { data: sync, error: syncError } = await supabase
       .from('sheet_syncs')
       .insert({
         sheet_id: sheetId,
-        row_count: parsed.rows.length,
-        headers: parsed.headers,
+        row_count: tab.rows.length,
+        headers: tab.headers,
         tab_name: tab.name,
-        tab_gid: tab.gid,
+        tab_gid: tab.index,
         suggested_section: suggestedSection
       })
       .select()
@@ -126,7 +86,7 @@ export async function POST(request: Request) {
     if (syncError || !sync) {
       result.tabs.push({
         tabName: tab.name,
-        tabGid: tab.gid,
+        tabGid: tab.index,
         syncId: '',
         rowCount: 0,
         headers: [],
@@ -136,25 +96,23 @@ export async function POST(request: Request) {
       continue;
     }
 
-    if (parsed.rows.length > 0) {
-      await supabase
-        .from('sheet_rows')
-        .insert(
-          parsed.rows.map((data, row_index) => ({
-            sync_id: sync.id,
-            sheet_id: sheetId,
-            row_index,
-            data
-          }))
-        );
+    if (tab.rows.length > 0) {
+      await supabase.from('sheet_rows').insert(
+        tab.rows.map((data, row_index) => ({
+          sync_id: sync.id,
+          sheet_id: sheetId,
+          row_index,
+          data
+        }))
+      );
     }
 
     result.tabs.push({
       tabName: tab.name,
-      tabGid: tab.gid,
+      tabGid: tab.index,
       syncId: sync.id,
-      rowCount: parsed.rows.length,
-      headers: parsed.headers,
+      rowCount: tab.rows.length,
+      headers: tab.headers,
       suggestedSection
     });
   }
