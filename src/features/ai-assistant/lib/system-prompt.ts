@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 export type AssistantMode = 'chat' | 'build';
 
 export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
-  const [sheetsRes, syncsRes, empleadosRes] = await Promise.all([
+  const [sheetsRes, syncsRes, empleadosRes, memoryRes] = await Promise.all([
     supabase.from('google_sheets').select('name, url'),
     supabase
       .from('sheet_syncs')
@@ -13,11 +13,16 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
     supabase
       .from('empleados')
       .select('id, nombre_apellido, activo, dni, equipo_ingreso')
-      .order('nombre_apellido')
+      .order('nombre_apellido'),
+    supabase
+      .from('ai_context_memory')
+      .select('key, value, description')
+      .order('updated_at', { ascending: false })
   ]);
 
   const sheets = sheetsRes.data ?? [];
   const syncs = syncsRes.data ?? [];
+  const memory = memoryRes.data ?? [];
   const empleados = empleadosRes.data ?? [];
 
   // Deduplicate tabs, keep latest
@@ -42,6 +47,13 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
         `  - "${t.tab_name}" → sección: ${t.suggested_section ?? 'sin clasificar'} | columnas: ${(t.headers as string[]).join(', ')}`
     )
     .join('\n');
+
+  const memoryList =
+    memory.length > 0
+      ? memory
+          .map((m) => `  [${m.key}] ${m.description ?? ''}: ${JSON.stringify(m.value)}`)
+          .join('\n')
+      : '  (sin memoria acumulada)';
 
   const buildModeInstructions =
     mode === 'build'
@@ -119,6 +131,10 @@ Tablas de integración Google Sheets:
 Los sheets son la fuente original de los datos. Se importan a Supabase mediante sync.
 NUNCA se modifican los sheets directamente desde el dashboard.
 Los datos en sheet_rows representan lo que el sheet tenía en el último sync.
+
+## Memoria de contexto acumulada
+Estos son hechos aprendidos en sesiones anteriores. Usalos como contexto:
+${memoryList}
 
 ## Empleados registrados en Supabase (${empleados.length} total)
 Usá estos IDs para resolver referencias cuando propongas acciones en build mode:

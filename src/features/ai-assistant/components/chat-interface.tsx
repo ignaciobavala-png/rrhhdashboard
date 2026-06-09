@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { ActionPreview } from './action-preview';
 import type { ChatMessage, AssistantMode, ProposedAction } from '../api/types';
 import type { LogEntry } from './action-log';
+import { createSession, saveMessage } from '../api/service';
 
 function parseProposedAction(content: string): ProposedAction | null {
   const match = content.match(/```json\s*([\s\S]*?)\s*```/);
@@ -83,6 +84,9 @@ export function ChatInterface({ onLogEntry, onLogActionUpdate }: Props) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [executingId, setExecutingId] = useState<string | null>(null);
   const logEntryIdRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+  const dbUserMsgIdRef = useRef<string | null>(null);
+  const dbAssistantMsgIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -117,6 +121,18 @@ export function ChatInterface({ onLogEntry, onLogActionUpdate }: Props) {
     const logId = crypto.randomUUID();
     logEntryIdRef.current = logId;
     onLogEntry?.({ timestamp: new Date(), mode, userMessage: content });
+
+    // Persist to DB (fire-and-forget, don't block UI)
+    void (async () => {
+      try {
+        if (!sessionIdRef.current) {
+          const session = await createSession(mode);
+          sessionIdRef.current = session.id;
+        }
+        const dbMsg = await saveMessage(sessionIdRef.current, 'user', content);
+        dbUserMsgIdRef.current = dbMsg.id;
+      } catch {}
+    })();
 
     try {
       const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
@@ -158,6 +174,16 @@ export function ChatInterface({ onLogEntry, onLogActionUpdate }: Props) {
           } catch {}
         }
       }
+
+      // Persist assistant response
+      void (async () => {
+        try {
+          if (sessionIdRef.current) {
+            const dbMsg = await saveMessage(sessionIdRef.current, 'assistant', fullContent);
+            dbAssistantMsgIdRef.current = dbMsg.id;
+          }
+        } catch {}
+      })();
 
       // Parse proposed action if in build mode
       if (mode === 'build') {
