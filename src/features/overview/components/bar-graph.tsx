@@ -10,6 +10,8 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart';
 import { supabase } from '@/lib/supabase';
+import { SectionHelp } from '@/components/ui/section-help';
+import { sectionHelp } from '@/config/section-help';
 
 const chartConfig = {
   activos: { label: 'Activos', color: 'var(--chart-1)' },
@@ -38,7 +40,12 @@ export function BarGraph() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Empleados por Equipo</CardTitle>
+        <div className='flex items-center justify-between gap-2'>
+          <CardTitle>Empleados por Equipo</CardTitle>
+          <SectionHelp title={sectionHelp.empleadosPorEquipo.title}>
+            {sectionHelp.empleadosPorEquipo.body}
+          </SectionHelp>
+        </div>
         <CardDescription>Activos e inactivos por área de ingreso</CardDescription>
       </CardHeader>
       <CardContent>

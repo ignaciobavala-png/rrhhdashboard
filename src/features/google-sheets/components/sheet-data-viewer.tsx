@@ -6,11 +6,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { getLatestSyncsByTab, getRowsForSync } from '../api/service';
-import { detectColumnTypes } from '../lib/column-detector';
-import { SmartCell } from './smart-cell';
-import { SectionSuggestionBanner } from './section-suggestion-banner';
-import type { SheetSync, SyncResult } from '../api/types';
+import { getLatestSyncsByTab } from '../api/service';
+import { TabData } from './tab-data';
+import type { SyncResult } from '../api/types';
 
 async function triggerSync(sheetId: string, url: string): Promise<SyncResult> {
   const res = await fetch('/api/sheets/sync', {
@@ -21,106 +19,6 @@ async function triggerSync(sheetId: string, url: string): Promise<SyncResult> {
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? 'Error al sincronizar');
   return json as SyncResult;
-}
-
-type TabDataProps = {
-  sync: SheetSync;
-  onSync: () => void;
-  isSyncing: boolean;
-};
-
-function TabData({ sync, onSync, isSyncing }: TabDataProps) {
-  const { data: rows, isLoading } = useQuery({
-    queryKey: ['sheet-rows', sync.id],
-    queryFn: () => getRowsForSync(sync.id),
-    enabled: !sync.error
-  });
-
-  if (isLoading) {
-    return (
-      <div className='space-y-2 pt-2'>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className='h-8 w-full' />
-        ))}
-      </div>
-    );
-  }
-
-  if (sync.error) {
-    return (
-      <div className='text-destructive flex items-center gap-2 py-3 text-sm'>
-        <Icons.alertCircle className='h-4 w-4' />
-        {sync.error}
-      </div>
-    );
-  }
-
-  const headers = sync.headers;
-  const rowData = (rows ?? []).map((r) => r.data);
-  const columnTypes = detectColumnTypes(headers, rowData);
-
-  const syncedAt = new Date(sync.synced_at).toLocaleString('es-AR', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
-  return (
-    <div className='space-y-3'>
-      {sync.suggested_section && (
-        <SectionSuggestionBanner
-          tabName={sync.tab_name}
-          suggestedSection={sync.suggested_section}
-        />
-      )}
-      <div className='flex items-center justify-between'>
-        <p className='text-muted-foreground text-xs'>
-          {sync.row_count} filas · Última sync: {syncedAt}
-        </p>
-        <Button variant='outline' size='sm' onClick={onSync} disabled={isSyncing}>
-          {isSyncing ? (
-            <Icons.spinner className='mr-1 h-3.5 w-3.5 animate-spin' />
-          ) : (
-            <Icons.refresh className='mr-1 h-3.5 w-3.5' />
-          )}
-          {isSyncing ? 'Sincronizando…' : 'Sincronizar'}
-        </Button>
-      </div>
-      {headers.length === 0 ? (
-        <p className='text-muted-foreground py-3 text-sm'>Esta pestaña está vacía.</p>
-      ) : (
-        <div className='overflow-x-auto rounded-md border'>
-          <table className='w-full text-sm'>
-            <thead className='bg-muted/50'>
-              <tr>
-                {headers.map((h) => (
-                  <th
-                    key={h}
-                    title={columnTypes[h]}
-                    className='text-muted-foreground px-3 py-2 text-left font-medium whitespace-nowrap'
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rowData.map((row, i) => (
-                <tr key={i} className='hover:bg-muted/30 border-t transition-colors'>
-                  {headers.map((h) => (
-                    <td key={h} className='px-3 py-2 whitespace-nowrap'>
-                      <SmartCell value={row[h] ?? ''} type={columnTypes[h]} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
 }
 
 type Props = {
@@ -179,6 +77,7 @@ export function SheetDataViewer({ sheetId, url }: Props) {
       {syncs.length === 1 ? (
         <TabData
           sync={syncs[0]}
+          sheetId={sheetId}
           onSync={() => syncMutation.mutate()}
           isSyncing={syncMutation.isPending}
         />
@@ -200,6 +99,7 @@ export function SheetDataViewer({ sheetId, url }: Props) {
             <TabsContent key={s.tab_name} value={s.tab_name}>
               <TabData
                 sync={s}
+                sheetId={sheetId}
                 onSync={() => syncMutation.mutate()}
                 isSyncing={syncMutation.isPending}
               />

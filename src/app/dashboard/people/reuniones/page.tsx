@@ -1,6 +1,7 @@
 import PageContainer from '@/components/layout/page-container';
 import ReunionesListingPage from '@/features/reuniones/components/reuniones-listing';
 import { searchParamsCache } from '@/lib/searchparams';
+import { sectionHelp } from '@/config/section-help';
 import type { SearchParams } from 'nuqs/server';
 
 export const metadata = { title: 'Dashboard: Reuniones' };
@@ -12,7 +13,11 @@ export default async function Page(props: PageProps) {
   searchParamsCache.parse(searchParams);
 
   return (
-    <PageContainer pageTitle='Reuniones' pageDescription='Resúmenes y minutas de reuniones'>
+    <PageContainer
+      pageTitle='Reuniones'
+      pageDescription='Resúmenes y minutas de reuniones'
+      infoContent={sectionHelp.reuniones}
+    >
       <ReunionesListingPage />
     </PageContainer>
   );

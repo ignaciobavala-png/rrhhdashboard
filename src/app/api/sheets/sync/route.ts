@@ -107,6 +107,18 @@ export async function POST(request: Request) {
       );
     }
 
+    if (suggestedSection) {
+      await supabase.from('sheet_sections').upsert(
+        {
+          section_name: suggestedSection,
+          sheet_id: sheetId,
+          sync_id: sync.id,
+          tab_name: tab.name
+        },
+        { onConflict: 'section_name,sheet_id,tab_name' }
+      );
+    }
+
     result.tabs.push({
       tabName: tab.name,
       tabGid: tab.index,

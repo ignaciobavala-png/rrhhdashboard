@@ -10,6 +10,8 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart';
 import { supabase } from '@/lib/supabase';
+import { SectionHelp } from '@/components/ui/section-help';
+import { sectionHelp } from '@/config/section-help';
 
 const chartConfig = {
   cantidad: { label: 'Empleados' },
@@ -55,7 +57,12 @@ export function PieGraph() {
   return (
     <Card className='flex h-full flex-col'>
       <CardHeader className='items-center pb-0'>
-        <CardTitle>Modalidad de Trabajo</CardTitle>
+        <div className='flex items-center gap-2'>
+          <CardTitle>Modalidad de Trabajo</CardTitle>
+          <SectionHelp title={sectionHelp.modalidadTrabajo.title}>
+            {sectionHelp.modalidadTrabajo.body}
+          </SectionHelp>
+        </div>
         <CardDescription>Distribución de empleados activos</CardDescription>
       </CardHeader>
       <CardContent className='flex flex-1 items-center justify-center pb-0'>

@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { SectionHelp } from '@/components/ui/section-help';
+import { sectionHelp } from '@/config/section-help';
 
 const DIAS_SEMANA = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES_CORTOS = [
@@ -113,7 +115,12 @@ export function ProximosEventos() {
   return (
     <Card className='flex flex-col h-full'>
       <CardHeader className='pb-3'>
-        <CardTitle>Próximos Eventos</CardTitle>
+        <div className='flex items-center justify-between gap-2'>
+          <CardTitle>Próximos Eventos</CardTitle>
+          <SectionHelp title={sectionHelp.proximosEventos.title}>
+            {sectionHelp.proximosEventos.body}
+          </SectionHelp>
+        </div>
         <CardDescription>Reuniones y cumpleaños · próximos 14 días</CardDescription>
       </CardHeader>
       <CardContent className='flex flex-col gap-2 flex-1'>

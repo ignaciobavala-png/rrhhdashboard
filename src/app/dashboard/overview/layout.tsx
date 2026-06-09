@@ -3,6 +3,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/comp
 import { Icons } from '@/components/icons';
 import { supabase } from '@/lib/supabase';
 import { VacacionesRanking } from '@/features/overview/components/vacaciones-ranking';
+import { SectionHelp } from '@/components/ui/section-help';
+import { sectionHelp } from '@/config/section-help';
 import React from 'react';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -95,7 +97,12 @@ export default async function OverViewLayout({
         <div className='*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs md:grid-cols-2 lg:grid-cols-4'>
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Empleados Activos</CardDescription>
+              <div className='flex items-center justify-between gap-2'>
+                <CardDescription>Empleados Activos</CardDescription>
+                <SectionHelp title={sectionHelp.empleadosActivos.title}>
+                  {sectionHelp.empleadosActivos.body}
+                </SectionHelp>
+              </div>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 {totalActivos ?? '—'}
               </CardTitle>
@@ -111,7 +118,12 @@ export default async function OverViewLayout({
 
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Flota Asignada</CardDescription>
+              <div className='flex items-center justify-between gap-2'>
+                <CardDescription>Flota Asignada</CardDescription>
+                <SectionHelp title={sectionHelp.flotaAsignada.title}>
+                  {sectionHelp.flotaAsignada.body}
+                </SectionHelp>
+              </div>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 {(lineasAsignadas ?? 0) + (laptopsAsignadas ?? 0)}
               </CardTitle>
@@ -126,7 +138,12 @@ export default async function OverViewLayout({
 
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Masa Salarial ARS</CardDescription>
+              <div className='flex items-center justify-between gap-2'>
+                <CardDescription>Masa Salarial ARS</CardDescription>
+                <SectionHelp title={sectionHelp.masaSalarialARS.title}>
+                  {sectionHelp.masaSalarialARS.body}
+                </SectionHelp>
+              </div>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 {masaARS > 0 ? formatMiles(masaARS) : '—'}
               </CardTitle>
@@ -153,7 +170,12 @@ export default async function OverViewLayout({
 
           <Card className='@container/card'>
             <CardHeader>
-              <CardDescription>Masa Salarial USD</CardDescription>
+              <div className='flex items-center justify-between gap-2'>
+                <CardDescription>Masa Salarial USD</CardDescription>
+                <SectionHelp title={sectionHelp.masaSalarialUSD.title}>
+                  {sectionHelp.masaSalarialUSD.body}
+                </SectionHelp>
+              </div>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
                 {masaUSD > 0 ? formatUSD(masaUSD) : '—'}
               </CardTitle>

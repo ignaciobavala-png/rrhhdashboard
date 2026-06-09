@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import { SectionHelp } from '@/components/ui/section-help';
+import { sectionHelp } from '@/config/section-help';
 
 type VacRow = { nombre: string; iniciales: string; saldo: number };
 
@@ -70,7 +72,12 @@ export function VacacionesRanking() {
   return (
     <Card className='flex flex-col h-full'>
       <CardHeader className='pb-2'>
-        <CardTitle>Saldo de Vacaciones</CardTitle>
+        <div className='flex items-center justify-between gap-2'>
+          <CardTitle>Saldo de Vacaciones</CardTitle>
+          <SectionHelp title={sectionHelp.vacacionesRanking.title}>
+            {sectionHelp.vacacionesRanking.body}
+          </SectionHelp>
+        </div>
         <CardDescription>
           Días disponibles · 2025
           {rows.length > 0 && (

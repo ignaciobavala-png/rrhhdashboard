@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { sectionHelp } from '@/config/section-help';
 import {
   getNotificaciones,
   getProximosEventos,
@@ -187,6 +188,7 @@ export default function NotificationsPage() {
     <PageContainer
       pageTitle='Notificaciones'
       pageDescription='Historial de actividad y próximos eventos del calendario'
+      infoContent={sectionHelp.notificaciones}
       pageHeaderAction={
         noLeidas > 0 ? (
           <Button variant='outline' size='sm' onClick={handleReadAll}>

@@ -24,6 +24,18 @@ export type SheetSync = {
   suggested_section: string | null;
 };
 
+export type SheetRowEffective = {
+  id: string;
+  sync_id: string;
+  sheet_id: string;
+  row_index: number;
+  data: Record<string, string>;
+  original_data: Record<string, string>;
+  edited_data: Record<string, string> | null;
+  is_deleted: boolean;
+  is_manual: boolean;
+};
+
 export type SheetRow = {
   id: string;
   sync_id: string;

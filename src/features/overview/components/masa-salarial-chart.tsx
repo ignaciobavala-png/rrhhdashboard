@@ -10,6 +10,8 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart';
 import { supabase } from '@/lib/supabase';
+import { SectionHelp } from '@/components/ui/section-help';
+import { sectionHelp } from '@/config/section-help';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -55,7 +57,12 @@ export function MasaSalarialChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Evolución Masa Salarial</CardTitle>
+        <div className='flex items-center justify-between gap-2'>
+          <CardTitle>Evolución Masa Salarial</CardTitle>
+          <SectionHelp title={sectionHelp.masaSalarialChart.title}>
+            {sectionHelp.masaSalarialChart.body}
+          </SectionHelp>
+        </div>
         <CardDescription>
           Últimos meses · ARS
           {total > 0 && (

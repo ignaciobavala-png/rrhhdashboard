@@ -1,6 +1,7 @@
 import PageContainer from '@/components/layout/page-container';
 import LegajoListingPage from '@/features/legajo/components/legajo-listing';
 import { searchParamsCache } from '@/lib/searchparams';
+import { sectionHelp } from '@/config/section-help';
 import type { SearchParams } from 'nuqs/server';
 
 export const metadata = { title: 'Dashboard: Legajo' };
@@ -12,7 +13,11 @@ export default async function Page(props: PageProps) {
   searchParamsCache.parse(searchParams);
 
   return (
-    <PageContainer pageTitle='Legajo' pageDescription='Ficha completa de todos los empleados'>
+    <PageContainer
+      pageTitle='Legajo'
+      pageDescription='Ficha completa de todos los empleados'
+      infoContent={sectionHelp.legajo}
+    >
       <LegajoListingPage />
     </PageContainer>
   );
