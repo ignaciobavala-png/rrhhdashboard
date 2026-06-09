@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Accordion,
@@ -26,6 +27,7 @@ async function triggerSync(sheetId: string, url: string) {
 
 export function GoogleSheetsListing() {
   const queryClient = useQueryClient();
+  const [syncingAll, setSyncingAll] = useState(false);
 
   const { data: sheets } = useSuspenseQuery({
     queryKey: ['google-sheets'],
@@ -43,7 +45,23 @@ export function GoogleSheetsListing() {
 
   const handleAdded = async (sheet: GoogleSheet) => {
     await triggerSync(sheet.id, sheet.url);
-    queryClient.invalidateQueries({ queryKey: ['sheet-sync', sheet.id] });
+    queryClient.invalidateQueries({ queryKey: ['sheet-syncs', sheet.id] });
+  };
+
+  const handleSyncAll = async () => {
+    if (sheets.length === 0) return;
+    setSyncingAll(true);
+    try {
+      await Promise.all(sheets.map((s) => triggerSync(s.id, s.url)));
+      sheets.forEach((s) => queryClient.invalidateQueries({ queryKey: ['sheet-syncs', s.id] }));
+      toast.success(
+        `${sheets.length} ${sheets.length === 1 ? 'sheet sincronizado' : 'sheets sincronizados'}`
+      );
+    } catch {
+      toast.error('Error al sincronizar');
+    } finally {
+      setSyncingAll(false);
+    }
   };
 
   if (sheets.length === 0) {
@@ -63,7 +81,15 @@ export function GoogleSheetsListing() {
 
   return (
     <div className='space-y-4'>
-      <div className='flex justify-end'>
+      <div className='flex justify-end gap-2'>
+        <Button variant='outline' size='sm' onClick={handleSyncAll} disabled={syncingAll}>
+          {syncingAll ? (
+            <Icons.spinner className='mr-2 h-4 w-4 animate-spin' />
+          ) : (
+            <Icons.refresh className='mr-2 h-4 w-4' />
+          )}
+          {syncingAll ? 'Sincronizando…' : 'Sincronizar todo'}
+        </Button>
         <AddSheetDialog onAdded={handleAdded} />
       </div>
       <Accordion type='multiple' className='space-y-2'>
