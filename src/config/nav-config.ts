@@ -88,6 +88,14 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         shortcut: ['g', 's'],
         items: []
+      },
+      {
+        title: 'Asistente IA',
+        url: '/dashboard/assistant',
+        icon: 'sparkles',
+        isActive: false,
+        shortcut: ['a', 'i'],
+        items: []
       }
     ]
   },
