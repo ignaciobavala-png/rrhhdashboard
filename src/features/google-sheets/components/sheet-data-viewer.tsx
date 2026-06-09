@@ -25,9 +25,11 @@ async function triggerSync(sheetId: string, url: string): Promise<SyncResult> {
 
 type TabDataProps = {
   sync: SheetSync;
+  onSync: () => void;
+  isSyncing: boolean;
 };
 
-function TabData({ sync }: TabDataProps) {
+function TabData({ sync, onSync, isSyncing }: TabDataProps) {
   const { data: rows, isLoading } = useQuery({
     queryKey: ['sheet-rows', sync.id],
     queryFn: () => getRowsForSync(sync.id),
@@ -72,9 +74,19 @@ function TabData({ sync }: TabDataProps) {
           suggestedSection={sync.suggested_section}
         />
       )}
-      <p className='text-muted-foreground text-xs'>
-        {sync.row_count} filas · Última sync: {syncedAt}
-      </p>
+      <div className='flex items-center justify-between'>
+        <p className='text-muted-foreground text-xs'>
+          {sync.row_count} filas · Última sync: {syncedAt}
+        </p>
+        <Button variant='outline' size='sm' onClick={onSync} disabled={isSyncing}>
+          {isSyncing ? (
+            <Icons.spinner className='mr-1 h-3.5 w-3.5 animate-spin' />
+          ) : (
+            <Icons.refresh className='mr-1 h-3.5 w-3.5' />
+          )}
+          {isSyncing ? 'Sincronizando…' : 'Sincronizar'}
+        </Button>
+      </div>
       {headers.length === 0 ? (
         <p className='text-muted-foreground py-3 text-sm'>Esta pestaña está vacía.</p>
       ) : (
@@ -163,24 +175,12 @@ export function SheetDataViewer({ sheetId, url }: Props) {
 
   return (
     <div className='space-y-2'>
-      <div className='flex justify-end'>
-        <Button
-          variant='ghost'
-          size='sm'
-          onClick={() => syncMutation.mutate()}
-          disabled={syncMutation.isPending}
-        >
-          {syncMutation.isPending ? (
-            <Icons.spinner className='mr-1 h-3.5 w-3.5 animate-spin' />
-          ) : (
-            <Icons.refresh className='mr-1 h-3.5 w-3.5' />
-          )}
-          {syncMutation.isPending ? 'Sincronizando…' : 'Sincronizar todo'}
-        </Button>
-      </div>
-
       {syncs.length === 1 ? (
-        <TabData sync={syncs[0]} />
+        <TabData
+          sync={syncs[0]}
+          onSync={() => syncMutation.mutate()}
+          isSyncing={syncMutation.isPending}
+        />
       ) : (
         <Tabs defaultValue={syncs[0].tab_name}>
           <TabsList className='mb-3'>
@@ -195,7 +195,11 @@ export function SheetDataViewer({ sheetId, url }: Props) {
           </TabsList>
           {syncs.map((s) => (
             <TabsContent key={s.tab_name} value={s.tab_name}>
-              <TabData sync={s} />
+              <TabData
+                sync={s}
+                onSync={() => syncMutation.mutate()}
+                isSyncing={syncMutation.isPending}
+              />
             </TabsContent>
           ))}
         </Tabs>
