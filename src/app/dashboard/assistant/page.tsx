@@ -43,7 +43,7 @@ export default function AssistantPage() {
 
   return (
     <div className='flex h-[calc(100vh-4rem)] divide-x overflow-hidden'>
-      <div className='w-52 shrink-0'>
+      <div className='hidden md:block w-52 shrink-0'>
         <SessionList
           activeSessionId={activeSessionId}
           onSelectSession={handleSelectSession}
@@ -61,7 +61,7 @@ export default function AssistantPage() {
           onSessionCreated={handleSessionCreated}
         />
       </div>
-      <div className='w-72 shrink-0'>
+      <div className='hidden md:block w-72 shrink-0'>
         <ActionLog entries={logEntries} />
       </div>
     </div>

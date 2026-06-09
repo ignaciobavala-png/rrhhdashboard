@@ -22,7 +22,8 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navGroups } from '@/config/nav-config';
@@ -39,6 +40,11 @@ export default function AppSidebar() {
   const { isOpen } = useMediaQuery();
   const router = useRouter();
   const filteredGroups = useFilteredNavGroups(navGroups);
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const closeOnMobile = React.useCallback(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
 
   React.useEffect(() => {
     // Side effects based on sidebar state changes
@@ -76,7 +82,7 @@ export default function AppSidebar() {
                           {item.items?.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
-                                <Link href={subItem.url}>
+                                <Link href={subItem.url} onClick={closeOnMobile}>
                                   <span>{subItem.title}</span>
                                 </Link>
                               </SidebarMenuSubButton>
@@ -93,7 +99,7 @@ export default function AppSidebar() {
                       tooltip={item.title}
                       isActive={pathname === item.url}
                     >
-                      <Link href={item.url}>
+                      <Link href={item.url} onClick={closeOnMobile}>
                         <Icon />
                         <span>{item.title}</span>
                       </Link>
