@@ -169,6 +169,68 @@ const MESES_MAP: Record<string, number> = {
   dic: 12
 };
 
+const MESES_NOMBRE: Record<string, number> = {
+  enero: 1,
+  febrero: 2,
+  marzo: 3,
+  abril: 4,
+  mayo: 5,
+  junio: 6,
+  julio: 7,
+  agosto: 8,
+  septiembre: 9,
+  octubre: 10,
+  noviembre: 11,
+  diciembre: 12
+};
+
+function pad(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function toIso(year: number, mes: number, day: number): string {
+  return `${year}-${pad(mes)}-${pad(day)}`;
+}
+
+// Parses Spanish date range text from cell notes, e.g.:
+//   "5 al 14 de junio"
+//   "del 5 al 14 de junio"
+//   "5/6 al 14/6"
+//   "05-06 al 14-06"
+function parseDateRangeFromNote(
+  note: string,
+  year: number
+): { inicio: string; fin: string } | null {
+  const text = note.toLowerCase().trim();
+
+  // "5 al 14 de junio" / "del 5 al 14 de junio"
+  const namedMonth = text.match(
+    /(?:del\s+)?(\d{1,2})\s+al\s+(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/
+  );
+  if (namedMonth) {
+    const startDay = parseInt(namedMonth[1]);
+    const endDay = parseInt(namedMonth[2]);
+    const mes = MESES_NOMBRE[namedMonth[3]];
+    return { inicio: toIso(year, mes, startDay), fin: toIso(year, mes, endDay) };
+  }
+
+  // "5/6 al 14/6" or "5-6 al 14-6" or "05.06 al 14.06"
+  const numericRange = text.match(/(\d{1,2})[/\-.:](\d{1,2})\s+al\s+(\d{1,2})[/\-.:](\d{1,2})/);
+  if (numericRange) {
+    const startDay = parseInt(numericRange[1]);
+    const startMes = parseInt(numericRange[2]);
+    const endDay = parseInt(numericRange[3]);
+    const endMes = parseInt(numericRange[4]);
+    const endYear = endMes < startMes ? year + 1 : year;
+    return {
+      inicio: toIso(year, startMes, startDay),
+      fin: toIso(endYear, endMes, endDay)
+    };
+  }
+
+  return null;
+}
+
 // ── importers ────────────────────────────────────────────────────────────────
 
 async function importLegajo(
@@ -276,39 +338,72 @@ async function importVacaciones(
       continue;
     }
 
-    // Sum total vacation days from month columns
     let totalDias = 0;
+    let registeredFromNote = false;
+
     for (const mh of monthCols) {
-      const val = parseNumber(row[mh] ?? '');
-      if (val && val > 0) totalDias += val;
+      const dias = parseNumber(row[mh] ?? '');
+      if (!dias || dias <= 0) continue;
+      totalDias += dias;
+
+      // If there's a cell note with a date range, register exact vacation period
+      const noteRaw = row[`${mh}__note`] ?? '';
+      if (noteRaw) {
+        const range = parseDateRangeFromNote(noteRaw, anio);
+        if (range) {
+          // Check for existing record with same start date to avoid duplicates
+          const { data: existingDia } = await supabase
+            .from('vacaciones')
+            .select('id')
+            .eq('empleado_id', empleadoId)
+            .eq('fecha_inicio', range.inicio)
+            .maybeSingle();
+
+          if (!existingDia) {
+            await supabase.rpc('registrar_vacaciones', {
+              p_empleado_id: empleadoId,
+              p_fecha_inicio: range.inicio,
+              p_fecha_fin: range.fin,
+              p_periodo_anio: anio
+            });
+            created++;
+          } else {
+            updated++;
+          }
+          registeredFromNote = true;
+          continue;
+        }
+      }
     }
 
-    // Upsert into vacaciones
-    const { data: existing } = await supabase
-      .from('vacaciones')
-      .select('id, saldo_inicial, saldo_actual')
-      .eq('empleado_id', empleadoId)
-      .eq('anio', anio)
-      .maybeSingle();
-
-    const saldoInicial = existing?.saldo_inicial ?? 14;
-    const saldoActual = saldoInicial - totalDias;
-
-    if (existing) {
-      await supabase
+    // No notes with parseable dates — fall back to updating the balance summary
+    if (!registeredFromNote) {
+      const { data: existing } = await supabase
         .from('vacaciones')
-        .update({ saldo_actual: saldoActual, dias_correspondientes: saldoInicial })
-        .eq('id', existing.id);
-      updated++;
-    } else {
-      await supabase.from('vacaciones').insert({
-        empleado_id: empleadoId,
-        anio,
-        saldo_inicial: saldoInicial,
-        dias_correspondientes: saldoInicial,
-        saldo_actual: saldoActual
-      });
-      created++;
+        .select('id, saldo_inicial, saldo_actual')
+        .eq('empleado_id', empleadoId)
+        .eq('anio', anio)
+        .maybeSingle();
+
+      const saldoInicial = existing?.saldo_inicial ?? 14;
+      const saldoActual = saldoInicial - totalDias;
+
+      if (existing) {
+        await supabase
+          .from('vacaciones')
+          .update({ saldo_actual: saldoActual, dias_correspondientes: saldoInicial })
+          .eq('id', existing.id);
+        updated++;
+      } else {
+        await supabase.from('vacaciones').insert({
+          empleado_id: empleadoId,
+          anio,
+          saldo_inicial: saldoInicial,
+          dias_correspondientes: saldoInicial,
+          saldo_actual: saldoActual
+        });
+        created++;
+      }
     }
   }
 

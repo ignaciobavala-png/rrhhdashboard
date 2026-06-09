@@ -58,6 +58,14 @@ async function parseXlsxFromGoogle(googleSheetId: string): Promise<ParsedTab[]> 
             : String(XLSX.utils.format_cell(cell)).trim());
         obj[headers[ci]] = val;
         if (val) hasValue = true;
+        // Capture cell notes/comments (Google Sheets Notes export as cell.c in xlsx)
+        if (cell.c && Array.isArray(cell.c) && cell.c.length > 0) {
+          const noteText = (cell.c as Array<{ t?: string }>)
+            .map((c) => c.t ?? '')
+            .join(' ')
+            .trim();
+          if (noteText) obj[`${headers[ci]}__note`] = noteText;
+        }
       }
       if (hasValue) rows.push(obj);
     }
