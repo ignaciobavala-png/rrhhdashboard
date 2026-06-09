@@ -60,48 +60,50 @@ export async function POST(request: Request) {
   // Discover all tabs
   const tabs = await discoverTabs(googleSheetId);
 
+  // Fetch all CSVs in parallel
+  const csvResults = await Promise.all(
+    tabs.map(async (tab) => {
+      try {
+        const res = await fetch(buildCsvUrl(googleSheetId, tab.gid));
+        if (!res.ok)
+          return {
+            tab,
+            parsed: null,
+            error: 'No se pudo acceder al sheet. Verificá que esté publicado.'
+          };
+        const text = await res.text();
+        return { tab, parsed: parseCsv(text), error: null };
+      } catch {
+        return { tab, parsed: null, error: 'Error al leer la pestaña' };
+      }
+    })
+  );
+
+  // Persist syncs sequentially (Supabase insert per tab)
   const result: SyncResult = { tabs: [] };
 
-  for (const tab of tabs) {
-    let parsed: ParsedSheet;
-
-    try {
-      const res = await fetch(buildCsvUrl(googleSheetId, tab.gid));
-      if (!res.ok) {
-        const { data: sync } = await supabase
-          .from('sheet_syncs')
-          .insert({
-            sheet_id: sheetId,
-            row_count: 0,
-            headers: [],
-            tab_name: tab.name,
-            tab_gid: tab.gid,
-            error: 'No se pudo acceder al sheet. Verificá que esté publicado.'
-          })
-          .select()
-          .single();
-        result.tabs.push({
-          tabName: tab.name,
-          tabGid: tab.gid,
-          syncId: sync?.id ?? '',
-          rowCount: 0,
+  for (const { tab, parsed, error } of csvResults) {
+    if (!parsed || error) {
+      const { data: sync } = await supabase
+        .from('sheet_syncs')
+        .insert({
+          sheet_id: sheetId,
+          row_count: 0,
           headers: [],
-          suggestedSection: null,
-          error: 'No se pudo acceder'
-        });
-        continue;
-      }
-      const text = await res.text();
-      parsed = parseCsv(text);
-    } catch {
+          tab_name: tab.name,
+          tab_gid: tab.gid,
+          error
+        })
+        .select()
+        .single();
       result.tabs.push({
         tabName: tab.name,
         tabGid: tab.gid,
-        syncId: '',
+        syncId: sync?.id ?? '',
         rowCount: 0,
         headers: [],
         suggestedSection: null,
-        error: 'Error al leer'
+        error: error ?? undefined
       });
       continue;
     }
@@ -135,13 +137,16 @@ export async function POST(request: Request) {
     }
 
     if (parsed.rows.length > 0) {
-      const rowInserts = parsed.rows.map((data, row_index) => ({
-        sync_id: sync.id,
-        sheet_id: sheetId,
-        row_index,
-        data
-      }));
-      await supabase.from('sheet_rows').insert(rowInserts);
+      await supabase
+        .from('sheet_rows')
+        .insert(
+          parsed.rows.map((data, row_index) => ({
+            sync_id: sync.id,
+            sheet_id: sheetId,
+            row_index,
+            data
+          }))
+        );
     }
 
     result.tabs.push({

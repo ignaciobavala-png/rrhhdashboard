@@ -183,16 +183,18 @@ export function SheetDataViewer({ sheetId, url }: Props) {
         />
       ) : (
         <Tabs defaultValue={syncs[0].tab_name}>
-          <TabsList className='mb-3'>
-            {syncs.map((s) => (
-              <TabsTrigger key={s.tab_name} value={s.tab_name}>
-                {s.tab_name}
-                {s.suggested_section && (
-                  <Icons.sparkles className='ml-1.5 h-3 w-3 text-amber-500' />
-                )}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className='mb-3 overflow-x-auto'>
+            <TabsList className='flex h-9 w-max min-w-full justify-start'>
+              {syncs.map((s) => (
+                <TabsTrigger key={s.tab_name} value={s.tab_name} className='flex-none'>
+                  {s.tab_name}
+                  {s.suggested_section && (
+                    <Icons.sparkles className='ml-1.5 h-3 w-3 text-amber-500' />
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           {syncs.map((s) => (
             <TabsContent key={s.tab_name} value={s.tab_name}>
               <TabData
