@@ -1,202 +1,103 @@
 # AGENTS.md — PetraLabs RRHH
 
-## Stack
+> Generado automáticamente por brain-agents-inject desde brain-data.
+> No editar manualmente — se sobreescribe al abrir Claude Code.
 
-- **Framework**: Next.js 16 (App Router) + TypeScript strict
-- **UI**: Shadcn UI + Tailwind CSS v4
-- **Estado**: TanStack Query v5 (sin Zustand — removido)
-- **Auth**: Sin autenticación. Un solo admin. RLS con `USING (true)` en todas las tablas.
-- **DB**: Supabase PostgreSQL + Storage — **conectado y funcionando**
-- **Package**: pnpm
-- **Linting**: OxLint + Oxfmt (0 errores, 0 warnings en producción)
-- **Deploy**: Vercel (conectado a `main` en GitHub)
+## Proyecto
+
+| Campo | Valor |
+|-------|-------|
+| Nombre | PetraLabs RRHH |
+| Tipo | Dashboard |
+| Cliente | PetraLabs |
+| Stack | Next.js 16.2.1 + React 19.2.4 + Supabase + Tailwind v4 + Zustand |
+| Estado | activo |
+| Último commit | 2026-06-09 |
+
+## Perfil del desarrollador
+
+# SKILL — perfil-desarrollador
+
+## Descripción
+Perfil técnico del desarrollador Ignacio Bavala. Define el stack tecnológico, convenciones y preferencias para cualquier proyecto nuevo.
+
+## Cuándo usarla
+- Al iniciar un proyecto nuevo
+- Cuando necesites saber qué stack usar por defecto
+- Para mantener consistencia tecnológica entre proyectos
+
+## Stack por defecto para nuevos proyectos
+
+```
+Framework:    Next.js 16 (App Router)
+UI:           React 19 + Tailwind CSS v4 + Framer Motion v12
+Estado:       Zustand v5
+DB:           Supabase (PostgreSQL + Auth + Storage + RLS)
+Deploy:       Vercel
+Package:      pnpm
+Linting:      ESLint 9 (flat config)
+Lenguaje:     TypeScript strict
+```
 
 ## Convenciones
 
 - Server Components por defecto, Client Components solo cuando hay interactividad
-- Cada módulo en `src/features/<modulo>/`
-- API services en `src/features/<modulo>/api/service.ts`
-- Tipos en `src/features/<modulo>/api/types.ts`
-- Migraciones SQL en `supabase/migrations/`
-- Tema por defecto: `petralabs` (Indigo `#4f46e5` primario, Esmeralda `#10b981` acento)
-- Tipografía: Inter (sans), JetBrains Mono (mono)
+- State global con Zustand v5 (no Context a menos que sea trivial)
+- Animaciones con Framer Motion v12
+- Estilos con Tailwind v4, configuración vía CSS `@theme` tokens
+- Migraciones SQL como archivos `.sql` planos
+- `vercel.json` con crons para keep-alive de Supabase
+- Cada proyecto necesita su `AGENTS.md`
+- **Next.js 16**: `middleware.ts` fue renombrado a `proxy.ts`; exportar `export function proxy(request)` en vez de `middleware`. Runtime Node.js por defecto. Codemod: `npx @next/codemod@canary middleware-to-proxy .`
 - Sin testing, sin Docker
-- **Undo toast**: toda acción destructiva/creativa usa `showUndoToast()` de `src/lib/undo-toast.ts` (10 segundos)
-- **ConfirmDialog**: toda eliminación usa `src/components/ui/confirm-dialog.tsx` (nunca `confirm()` nativo)
-- Iconos: solo desde `@/components/icons`, nunca directo de `@tabler/icons-react`
+- Sin CSS-in-JS más allá de Tailwind
+- `@/*` como path alias (apunta a `./*` o `./src/*`)
 
-## Comandos
+## ESLint
 
-```bash
-pnpm dev          # Desarrollo (localhost:3000)
-pnpm build        # Build producción
-pnpm lint         # OxLint
-git push origin main  # Dispara deploy automático en Vercel
+Usar flat config (`eslint.config.mjs`):
+```js
+import { dirname } from "path"
+import { fileURLToPath } from "url"
+import { FlatCompat } from "@eslint/eslintrc"
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const compat = new FlatCompat({ baseDirectory: __dirname })
+const eslintConfig = [...compat.extends("next/core-web-vitals", "next/typescript")]
+export default eslintConfig
 ```
 
-## Estado Actual (Mayo 2026)
+## Skills relevantes para este proyecto
 
-Proyecto en producción en Vercel. Todos los módulos principales conectados a Supabase con datos reales.
-Sin autenticación — acceso libre al admin (single-tenant, un solo usuario admin).
+Leer el archivo completo solo si la tarea actual lo requiere — esta lista es solo un índice.
 
-## Módulos
-
-| Ruta | Módulo | Estado |
-|------|--------|--------|
-| `/dashboard/overview` | Resumen RRHH | ✅ Datos reales — KPIs + evolución masa salarial + próximos eventos + empleados por equipo + saldo vacaciones |
-| `/dashboard/people` | Legajo | ✅ Supabase — tabla con edición inline, empleados reales |
-| `/dashboard/people/[id]` | Detalle Empleado | ✅ Supabase — datos personales + laborales + modalidad + puesto |
-| `/dashboard/people/new` | Nuevo Empleado | ✅ Form completo |
-| `/dashboard/people/reuniones` | Reuniones | ✅ Supabase — tabla + minutas + notas con undo toast |
-| `/dashboard/people/manuales` | Manuales | ✅ Supabase Storage — uploader drag & drop + descarga + eliminar |
-| `/dashboard/calendario` | Calendario | ✅ Supabase — RPC + eventos + vacaciones + cumpleaños |
-| `/dashboard/flota/celulares` | Flota Celulares | ✅ Supabase — join a empleados |
-| `/dashboard/flota/laptops` | Flota Laptops | ✅ Supabase — CRUD completo con undo toast |
-| `/dashboard/payroll` | Sueldos | ✅ Supabase — accordion pesos/USD + bonos anuales |
-| `/dashboard/notifications` | Notificaciones | ✅ Supabase — historial por triggers DB + próximos eventos (5 días) |
-| `/dashboard/documents` | Expediente Digital | 🔲 Placeholder |
-| `/dashboard/operations` | Control Operativo | 🔲 Placeholder |
-
-## Base de Datos
-
-### Migraciones aplicadas
-
-| Archivo | Fecha | Contenido |
-|---------|-------|-----------|
-| `20260510_00001_schema_inicial.sql` | May 10 | Esquema base: empresas, empleados, HO, vacaciones, sueldos, etc. |
-| `20260515_00001_eventos_calendario.sql` | May 15 | RPCs para eventos del calendario |
-| `20260515_00002_actualizar_movilidad.sql` | May 15 | Ajuste columna movilidad en empleados |
-| `20260515_00003_crear_tabla_puestos.sql` | May 15 | Tabla `puestos` con datos de cargo |
-| `20260515_00004_cargar_bonos.sql` | May 15 | Columna `bono_anual` en sueldos |
-| `20260515_00005_arreglar_rls_puestos.sql` | May 15 | RLS para tabla puestos |
-| `20260518_00001_fix_reuniones_rls.sql` | May 18 | Fix RLS reuniones para writes del cliente anon |
-| `20260518_00002_manuales_storage.sql` | May 18 | Bucket `manuales` en Storage + RLS + columnas storage_path/nombre_archivo/tamanio/tipo_archivo |
-| `flota_laptops_table` | May 18 | Tabla `flota_laptops` con FK, check constraint, RLS, indexes |
-| `flota_laptops_add_detail_columns` | May 18 | Columnas: usuario, equipo, ubicacion, comentarios |
-| `notificaciones_tabla_y_triggers` | May 18 | Tabla `notificaciones` + función `log_change()` + 6 AFTER triggers (empleados, puestos, reuniones, manuales, flota_laptops, lineas_moviles) |
-
-### Tablas
-
-| Tabla | Propósito |
-|-------|-----------|
-| `empresas` | Tenant multi-empresa |
-| `empleados` | Datos personales + laborales |
-| `puestos` | Cargo/puesto por empleado (upsert desde legajo) |
-| `home_office_semanal` | Modalidad semanal (Lu-Vi) |
-| `vacaciones` | Saldos vacacionales por año |
-| `vacaciones_dias` | Detalle mensual de días usados |
-| `lineas_moviles` | Flota de celulares |
-| `flota_laptops` | Flota de laptops (marca, modelo, serie, usuario, equipo, ubicación, estado) |
-| `sueldos` | Historial salarial mensual + bono_anual (PESOS ARG y USD) |
-| `manuales` | Manuales por área (con storage_path a bucket Supabase) |
-| `reuniones` | Minutas de reuniones (título, fecha, hora, asistentes, resumen) |
-| `notificaciones` | Log de actividad generado por triggers DB (leida, entidad, accion, descripcion) |
-
-### RLS
-
-Todas las tablas tienen RLS con `USING (true)` — sin auth, acceso libre desde el cliente anon.
-
-### Storage
-
-- Bucket `manuales` — archivos PDF/Word/Excel, límite 50 MB, público via signed URL
-- Descargar: `getDownloadUrl(storage_path)` en `src/features/manuales/api/service.ts`
-
-### Triggers de Actividad
-
-La función `log_change()` (SECURITY DEFINER) registra automáticamente en `notificaciones` cualquier INSERT/UPDATE/DELETE en: `empleados`, `puestos`, `reuniones`, `manuales`, `flota_laptops`, `lineas_moviles`.
-
-## Patrones Clave
-
-### Undo Toast
-```ts
-import { showUndoToast } from '@/lib/undo-toast';
-
-showUndoToast('Descripción acción', async () => {
-  await revertirCambio();
-  queryClient.invalidateQueries({ queryKey: ['...'] });
-});
-```
-
-### Confirm Dialog (eliminaciones)
-```tsx
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-
-<ConfirmDialog
-  open={open} onOpenChange={setOpen}
-  title='¿Eliminar X?' description='...'
-  confirmLabel='Eliminar' destructive
-  onConfirm={handleDelete} loading={loading}
-/>
-```
-
-### Flujo estándar mutación
-```ts
-// 1. Guardar estado previo
-const saved = { ...row.original };
-// 2. Ejecutar acción
-await deleteX(id);
-// 3. Invalidar query
-queryClient.invalidateQueries({ queryKey: ['modulo'] });
-// 4. Undo toast con restauración
-showUndoToast('X eliminado', async () => {
-  await createX(saved);
-  queryClient.invalidateQueries({ queryKey: ['modulo'] });
-});
-```
-
-## Archivos Clave
-
-| Archivo | Propósito |
-|---------|-----------|
-| `src/lib/supabase.ts` | Cliente Supabase compartido (browser) |
-| `src/lib/undo-toast.ts` | Helper showUndoToast (10s, botón ↩ Deshacer) |
-| `src/lib/theme-context.tsx` | Theme provider custom |
-| `src/components/ui/confirm-dialog.tsx` | Dialog de confirmación para eliminaciones |
-| `src/config/nav-config.ts` | Configuración de navegación lateral |
-| `src/hooks/use-data-table.ts` | Hook data-table con URL state vía nuqs |
-
-## Resumen / Overview — Widgets Implementados
-
-| Slot | Componente | Datos |
-|------|-----------|-------|
-| KPI x4 | `layout.tsx` (server) | Empleados activos, Flota asignada (líneas+laptops), Masa ARS (último mes + delta %), Masa USD |
-| `@bar_stats` | `masa-salarial-chart.tsx` | Evolución masa salarial ARS — área chart, últimos 6 meses |
-| `@sales` | `proximos-eventos.tsx` | Reuniones + cumpleaños próximos 14 días, badge urgente si ≤1 día |
-| `@area_stats` | `bar-graph.tsx` | Empleados por equipo — barras activos/inactivos |
-| Inline | `vacaciones-ranking.tsx` | Lista todos activos con barra progreso y días, colores por criticidad |
-
-## Cleanup Realizado en Esta Sesión
-
-- **Removidos**: `@clerk/nextjs`, `@clerk/themes`, `@sentry/nextjs` de package.json y pnpm-lock.yaml
-- **Eliminados**: `src/proxy.ts` (clerkMiddleware), `src/app/auth/`, `src/features/auth/`
-- **Limpiados**: `src/instrumentation.ts`, `src/instrumentation-client.ts` (eliminado), `src/app/global-error.tsx`
-- **next.config.ts**: eliminado `withSentryConfig` y hostnames de Clerk
-- **Variables de entorno**: solo `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` necesarias
-
-## Deploy Vercel
-
-- Repo: `github.com/ignaciobavala-png/rrhhdashboard` (branch `main`)
-- Variables de entorno en Vercel: `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- Cada push a `main` dispara deploy automático
-- Pre-push hook local corre `pnpm build` antes de pushear
-
-## Issues Conocidos / Pendientes
-
-- Sin autenticación — accesible a cualquiera con la URL (pendiente Supabase Auth)
-- Módulos `documents` y `operations` son placeholders sin funcionalidad
-- API routes `/api/products` y `/api/users` son legacy del starter (no se usan)
-- Archivos `src/constants/mock-api-*.ts` son legacy muertos
-
-## Integración Google Calendar / Gmail (pendiente, no implementada)
-
-Para enviar invitaciones automáticas al crear reuniones:
-1. Google Cloud Console: habilitar Gmail API + Calendar API, crear OAuth 2.0 credentials
-2. El cliente (PetraLabs) crea el proyecto y provee `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`
-3. Implementar OAuth flow en `/api/google/callback`, guardar `refresh_token` en Supabase
-4. Al crear reunión: llamar Gmail API (envía email .ics) + Calendar API (crea evento con asistentes)
-
-## Contexto Adicional
-
-Proyecto iniciado: 2026-05-08. Basado en next-shadcn-dashboard-starter.
-Desarrollador: Ignacio Bavala (ignaciobavala@gmail.com).
-Primer deploy a Vercel: 2026-05-18.
+- **Tiquetera Vite + Supabase — bugs silenciosos y patrones seguros** (`/home/nch/Escritorio/brain-data/skills/tiquetera-vite-supabase/SKILL.md`)
+  Al trabajar en cualquier sistema de tickets/entradas con: localStorage como caché de tickets en el cliente Supabase como fuente de verdad Escaneo de QR con confirmación de ingreso Registro de asistentes por email
+- **Google OAuth con Supabase SSR en Next.js 16** (`/home/nch/Escritorio/brain-data/skills/supabase-oauth-nextjs/SKILL.md`)
+  Guía completa para instalar Google OAuth en Next.js 16 (App Router) con `@supabase/ssr`. Incluye los bugs conocidos que rompen el login silenciosamente.  ## 1. Google Cloud Console 1. Crear proyecto en https://console.cl…
+- **Enviopack en Next.js — integración completa de cotización de envíos** (`/home/nch/Escritorio/brain-data/skills/enviopack-nextjs/SKILL.md`)
+  Cuando un proyecto argentino necesite cotización de envíos a domicilio. Enviopack agrega múltiples transportistas (OCA, Andreani, etc.) bajo una sola API.
+- **Next.js 16 — App Router patterns y convenciones** (`/home/nch/Escritorio/brain-data/skills/nextjs-app-router-patterns/SKILL.md`)
+  Al iniciar o trabajar en cualquier proyecto Next.js: estructura de rutas, data fetching, Server Actions, proxy (middleware), metadata, layouts.
+- **TypeScript strict — tipos útiles en el stack Next.js + Supabase** (`/home/nch/Escritorio/brain-data/skills/typescript-advanced-types/SKILL.md`)
+  Al definir tipos para API responses, props de componentes, Server Actions, datos de Supabase, o cuando TS emite un error de tipos que no se entiende.
+- **Supabase + Postgres — esquemas, RLS y queries eficientes** (`/home/nch/Escritorio/brain-data/skills/supabase-postgres-best-practices/SKILL.md`)
+  Al diseñar tablas, escribir políticas RLS, optimizar queries, o integrar Supabase con Next.js 16.
+- **Supabase Storage — egress, límites y buenas prácticas** (`/home/nch/Escritorio/brain-data/skills/supabase-storage-egress/SKILL.md`)
+  Al subir archivos a Supabase Storage, especialmente videos o imágenes pesadas que se sirven públicamente. También al diseñar el hero de un sitio o cualquier sección con media grande.
+- **Testing E2E con Playwright — ecommerce Next.js + Supabase** (`/home/nch/Escritorio/brain-data/skills/playwright-ecommerce/SKILL.md`)
+  Cuando haya un proyecto Next.js + Supabase con autenticación por roles y flujos de compra que necesiten cobertura de regresión antes del lanzamiento.
+- **Tailwind CSS v4 — configuración y patrones mobile-first** (`/home/nch/Escritorio/brain-data/skills/tailwindcss-mobile-first/SKILL.md`)
+  Al configurar Tailwind v4 en un proyecto nuevo, definir tokens de diseño, o implementar layouts responsivos.
+- **Vercel + React — performance y patrones críticos** (`/home/nch/Escritorio/brain-data/skills/vercel-react-best-practices/SKILL.md`)
+  Al optimizar una página lenta, reducir el bundle, revisar re-renders, o hacer deploy en Vercel.
+- **Comprimir imágenes client-side antes de subir al storage** (`/home/nch/Escritorio/brain-data/skills/client-side-image-compress/SKILL.md`)
+  Siempre que se implemente un uploader de imágenes (flyers, avatares, fondos, productos, etc.). Sin compresión, los usuarios pueden subir archivos de 10–25 MB que se sirven a cada visitante, generando egress masivo en Sup…
+- **Contenido dual público/comunidad con columna visibilidad** (`/home/nch/Escritorio/brain-data/skills/contenido-dual-visibilidad/SKILL.md`)
+  Cuando un sitio tiene usuarios con diferentes niveles de acceso (público, registrado, miembro) y querés extender las páginas existentes con contenido exclusivo **sin crear rutas nuevas**. El sitio es el mismo en esencia…
+- **Conectar Supabase CLI con PAT** (`/home/nch/Escritorio/brain-data/skills/supabase-conexion-cli/SKILL.md`)
+  El PAT de Supabase es **por cuenta**, no por proyecto. Un solo token sirve para todos los proyectos de la organización. ### Generar token 1. Ir a https://supabase.com/dashboard/account/tokens 2. Crear nuevo token 3. Copi…
+- **Supabase MCP Multiproyecto** (`/home/nch/Escritorio/brain-data/skills/supabase-mcp-multiproyecto/SKILL.md`)
+  Siempre. Esta skill es un guard automático: cada vez que se use cualquier herramienta MCP de Supabase, se debe verificar que el proyecto destino coincide con el proyecto activo del directorio de trabajo. No se debe deleg…
+- **Lenis smooth scroll — bugs silenciosos con drawers y overlays** (`/home/nch/Escritorio/brain-data/skills/lenis-smooth-scroll/SKILL.md`)
+  Cuando un proyecto usa Lenis para smooth scroll y hay drawers, modales o cualquier contenedor con `overflow-y-auto` que no responde al trackpad.
