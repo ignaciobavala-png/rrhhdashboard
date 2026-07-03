@@ -2,6 +2,8 @@ import { supabase } from '@/lib/supabase';
 
 export type AssistantMode = 'chat' | 'build';
 
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
 export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
   const [
     sheetsRes,
@@ -11,7 +13,13 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
     laptopsRes,
     lineasRes,
     vacacionesRes,
-    sueldosRes
+    vacacionesDiasRes,
+    sueldosRes,
+    homeOfficeRes,
+    reunionesRes,
+    eventosRes,
+    manualesRes,
+    notificacionesRes
   ] = await Promise.all([
     supabase.from('google_sheets').select('name, url'),
     supabase
@@ -21,7 +29,9 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
       .limit(50),
     supabase
       .from('empleados')
-      .select('id, nombre_apellido, activo, dni, equipo_ingreso, puesto:puestos(puesto)')
+      .select(
+        'id, nombre_apellido, activo, dni, equipo_ingreso, fecha_ingreso, fecha_nacimiento, email, celular, direccion, modalidad, movilidad, contacto_emergencia, puesto:puestos(puesto)'
+      )
       .order('nombre_apellido'),
     supabase
       .from('ai_context_memory')
@@ -39,12 +49,25 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
       .from('vacaciones')
       .select('empleado_id, anio, saldo_inicial, dias_correspondientes, saldo_actual')
       .order('anio', { ascending: false }),
+    supabase.rpc('get_vacaciones_calendario'),
     supabase
       .from('sueldos')
       .select('empleado_id, moneda, mes, anio, monto, bono_anual')
       .order('anio', { ascending: false })
       .order('mes', { ascending: false })
-      .limit(200)
+      .limit(600),
+    supabase
+      .from('home_office_semanal')
+      .select('empleado_id, dia_semana, modalidad')
+      .is('fecha_hasta', null),
+    supabase.from('reuniones').select('*').order('fecha', { ascending: false }).limit(50),
+    supabase.rpc('get_eventos_calendario'),
+    supabase.from('manuales').select('tarea, area, link_manual, nombre_archivo').order('area'),
+    supabase
+      .from('notificaciones')
+      .select('entidad, accion, descripcion, created_at')
+      .order('created_at', { ascending: false })
+      .limit(15)
   ]);
 
   const sheets = sheetsRes.data ?? [];
@@ -54,7 +77,18 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
   const laptops = laptopsRes.data ?? [];
   const lineas = lineasRes.data ?? [];
   const vacaciones = vacacionesRes.data ?? [];
+  const vacacionesDias = (vacacionesDiasRes.data ?? []) as Record<string, unknown>[];
   const sueldos = sueldosRes.data ?? [];
+  const homeOffice = homeOfficeRes.data ?? [];
+  const reuniones = reunionesRes.data ?? [];
+  const eventos = (eventosRes.data ?? []) as Record<string, unknown>[];
+  const manuales = manualesRes.data ?? [];
+  const notificaciones = notificacionesRes.data ?? [];
+
+  // Mapa id → nombre para que la IA no tenga que cruzar ids a mano
+  const nombrePorId = new Map(empleados.map((e) => [e.id, e.nombre_apellido]));
+  const nombre = (id: number | null) =>
+    (id !== null ? nombrePorId.get(id) : null) ?? `empleado_id=${id}`;
 
   // Deduplicate tabs, keep latest
   const tabMap = new Map<string, (typeof syncs)[0]>();
@@ -65,10 +99,35 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
 
   const sheetList = sheets.map((s) => `  - "${s.name}"`).join('\n');
 
+  const hoPorEmpleado = new Map<number, string[]>();
+  for (const h of homeOffice) {
+    const arr = hoPorEmpleado.get(h.empleado_id) ?? [];
+    arr.push(`${h.dia_semana}: ${h.modalidad}`);
+    hoPorEmpleado.set(h.empleado_id, arr);
+  }
+
   const empleadosList = empleados
     .map((e) => {
-      const puesto = (e.puesto as { puesto: string }[] | null)?.[0]?.puesto ?? '';
-      return `  id=${e.id} | ${e.nombre_apellido}${e.dni ? ` | DNI: ${e.dni}` : ''}${puesto ? ` | puesto: ${puesto}` : ''}${e.equipo_ingreso ? ` | equipo: ${e.equipo_ingreso}` : ''} | ${e.activo ? 'activo' : 'inactivo'}`;
+      const puesto = (e.puesto as { puesto: string }[] | { puesto: string } | null) ?? null;
+      const puestoStr = Array.isArray(puesto) ? puesto[0]?.puesto : puesto?.puesto;
+      const campos = [
+        `id=${e.id}`,
+        e.nombre_apellido,
+        e.activo ? 'activo' : 'inactivo',
+        e.dni ? `DNI: ${e.dni}` : null,
+        puestoStr ? `puesto: ${puestoStr}` : null,
+        e.equipo_ingreso ? `equipo: ${e.equipo_ingreso}` : null,
+        e.fecha_ingreso ? `ingreso: ${e.fecha_ingreso}` : null,
+        e.fecha_nacimiento ? `nacimiento: ${e.fecha_nacimiento}` : null,
+        e.email ? `email: ${e.email}` : null,
+        e.celular ? `celular: ${e.celular}` : null,
+        e.direccion ? `dirección: ${e.direccion}` : null,
+        e.modalidad ? `modalidad: ${e.modalidad}` : null,
+        e.movilidad ? `movilidad: ${e.movilidad}` : null,
+        e.contacto_emergencia ? `emergencia: ${e.contacto_emergencia}` : null
+      ].filter(Boolean);
+      const ho = hoPorEmpleado.get(e.id);
+      return `  ${campos.join(' | ')}${ho ? `\n    home office semanal → ${ho.join(', ')}` : ''}`;
     })
     .join('\n');
 
@@ -111,20 +170,71 @@ export async function buildSystemPrompt(mode: AssistantMode): Promise<string> {
       ? vacaciones
           .map(
             (v) =>
-              `  empleado_id=${v.empleado_id} | año=${v.anio} | saldo_inicial=${v.saldo_inicial ?? 'N/D'} | días_correspondientes=${v.dias_correspondientes ?? 'N/D'} | saldo_actual=${v.saldo_actual ?? 'N/D'}`
+              `  ${nombre(v.empleado_id)} | año=${v.anio} | saldo_inicial=${v.saldo_inicial ?? 'N/D'} | días_correspondientes=${v.dias_correspondientes ?? 'N/D'} | saldo_actual=${v.saldo_actual ?? 'N/D'}`
           )
           .join('\n')
       : '  (sin registros de vacaciones en Supabase)';
+
+  const vacacionesDiasList =
+    vacacionesDias.length > 0
+      ? vacacionesDias
+          .map((v) => {
+            const fechas =
+              v.fecha_inicio && v.fecha_fin ? ` | del ${v.fecha_inicio} al ${v.fecha_fin}` : '';
+            return `  ${v.nombre_apellido} | ${MESES[(v.mes as number) - 1]} ${v.anio_uso} | ${v.dias_usados} días${fechas}`;
+          })
+          .join('\n')
+      : '  (sin días de vacaciones registrados)';
 
   const sueldosList =
     sueldos.length > 0
       ? sueldos
           .map(
             (s) =>
-              `  empleado_id=${s.empleado_id} | ${s.moneda} | ${s.mes}/${s.anio} | monto=${s.monto ?? 'N/D'}${s.bono_anual ? ` | bono=${s.bono_anual}` : ''}`
+              `  ${nombre(s.empleado_id)} | ${s.moneda} | ${s.mes}/${s.anio} | monto=${s.monto ?? 'N/D'}${s.bono_anual ? ` | bono=${s.bono_anual}` : ''}`
           )
           .join('\n')
       : '  (sin sueldos registrados en Supabase)';
+
+  const reunionesList =
+    reuniones.length > 0
+      ? reuniones
+          .map(
+            (r) =>
+              `  - ${r.fecha}${r.hora ? ` ${r.hora}` : ''} | ${r.titulo}${r.duracion ? ` | ${r.duracion} min` : ''} | participantes: ${(r.participantes ?? []).join(', ') || 'N/D'}${r.resumen ? ` | resumen: ${r.resumen}` : ''}`
+          )
+          .join('\n')
+      : '  (sin reuniones registradas)';
+
+  const eventosList =
+    eventos.length > 0
+      ? eventos
+          .map(
+            (e) =>
+              `  - ${e.fecha} | ${e.tipo} | ${e.nombre_apellido}${e.descripcion ? ` | ${e.descripcion}` : ''}`
+          )
+          .join('\n')
+      : '  (sin eventos de calendario registrados)';
+
+  const manualesList =
+    manuales.length > 0
+      ? manuales
+          .map(
+            (m) =>
+              `  - [${m.area ?? 'sin área'}] ${m.tarea ?? 'N/D'}${m.link_manual ? ` | link: ${m.link_manual}` : ''}${m.nombre_archivo ? ` | archivo: ${m.nombre_archivo}` : ''}`
+          )
+          .join('\n')
+      : '  (sin manuales registrados)';
+
+  const actividadList =
+    notificaciones.length > 0
+      ? notificaciones
+          .map(
+            (n) =>
+              `  - ${n.created_at?.slice(0, 10)} | ${n.accion} en ${n.entidad}: ${n.descripcion}`
+          )
+          .join('\n')
+      : '  (sin actividad reciente)';
 
   const buildModeInstructions =
     mode === 'build'
@@ -170,7 +280,7 @@ Si el usuario pregunta por datos que no están en este contexto, decile exactame
   return `# Asistente de RRHH — PetraLabs Dashboard
 
 Sos el asistente inteligente del dashboard de Recursos Humanos de PetraLabs.
-Tu misión es ayudar a interpretar, cruzar y mantener los datos de RRHH que viven en dos fuentes de verdad.
+Tu misión es ayudar a interpretar, cruzar y mantener los datos de RRHH.
 
 ## ⚠️ REGLA FUNDAMENTAL — NO ALUCINACIÓN
 
@@ -196,6 +306,8 @@ Tablas de negocio:
 - \`empleados\`: id, empresa_id, nombre_apellido, activo, fecha_nacimiento, dni, celular, contacto_emergencia, equipo_ingreso, fecha_ingreso, email, direccion, movilidad, modalidad
 - \`sueldos\`: id, empleado_id, empresa_id, moneda ('PESOS ARG' | 'USD'), mes (1-12), anio, monto, bono_anual
 - \`vacaciones\`: id, empleado_id, anio, saldo_inicial, dias_correspondientes, saldo_actual
+- \`vacaciones_dias\`: detalle mensual de días tomados con fecha_inicio/fecha_fin
+- \`eventos_calendario\`: id, empleado_id, tipo ('estudio'|'ausencia'|'mudanza'), fecha, descripcion
 - \`lineas_moviles\`: id, empleado_id, empresa_id, numero, rol, usuario, equipo, estado
 - \`flota_laptops\`: id, empresa_id, empleado_id, marca, modelo, numero_serie, estado, usuario, equipo, ubicacion, comentarios
 - \`home_office_semanal\`: id, empleado_id, dia_semana, modalidad, fecha_desde, fecha_hasta
@@ -216,6 +328,7 @@ NUNCA se modifican los sheets directamente desde el dashboard.
 Los datos en sheet_rows representan lo que el sheet tenía en el último sync.
 
 ## Empleados registrados en Supabase (${empleados.length} total)
+Incluye datos personales, de contacto y régimen de home office cuando están cargados.
 ${empleadosList || '  (sin empleados)'}
 
 ## Flota — Laptops en Supabase (${laptops.length} registros)
@@ -225,11 +338,26 @@ ${laptopsList}
 ## Flota — Líneas móviles en Supabase (${lineas.length} registros)
 ${lineasList}
 
-## Vacaciones en Supabase (${vacaciones.length} registros)
+## Vacaciones — saldos anuales (${vacaciones.length} registros)
 ${vacacionesList}
+
+## Vacaciones — detalle de días tomados (${vacacionesDias.length} registros)
+${vacacionesDiasList}
 
 ## Sueldos en Supabase (últimos ${sueldos.length} registros)
 ${sueldosList}
+
+## Reuniones (últimas ${reuniones.length})
+${reunionesList}
+
+## Eventos de calendario (${eventos.length} registros: días de estudio, ausencias, mudanzas)
+${eventosList}
+
+## Manuales por área (${manuales.length} registros)
+${manualesList}
+
+## Actividad reciente en el dashboard (últimas ${notificaciones.length} notificaciones)
+${actividadList}
 
 ## Google Sheets conectados
 ${sheetList || '  (ninguno conectado)'}
@@ -246,7 +374,7 @@ ${memoryList}
 
 2. **Resolución de empleados**: Cuando un nombre del sheet no coincide exactamente con \`empleados.nombre_apellido\`, intentá: coincidencia exacta → ilike parcial → solo apellido. Si hay ambigüedad, preguntale al usuario.
 
-3. **Sueldos**: La moneda se detecta por el nombre de la pestaña ('USD' o 'PESOS ARG'). Un empleado puede tener sueldos en ambas monedas. El campo \`empresa_id\` es obligatorio.
+3. **Sueldos**: La moneda se detecta por el nombre de la pestaña ('USD' o 'PESOS ARG'). Un empleado puede tener sueldos en ambas monedas. El campo \`empresa_id\` es obligatorio. Ojo: puede haber sueldos cargados por adelantado para meses futuros de un solo empleado — el último mes completo es el que tiene sueldos de la mayoría de la plantilla.
 
 4. **Vacaciones**: El saldo_actual = saldo_inicial − días tomados. No asumas saldo_inicial=14 sin que aparezca en los datos.
 

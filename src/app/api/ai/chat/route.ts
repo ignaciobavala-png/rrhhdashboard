@@ -18,6 +18,10 @@ export async function POST(request: Request) {
   }
 
   const systemPrompt = await buildSystemPrompt(mode ?? 'chat');
+  // Visible en logs de Vercel: cuánto contexto se manda en cada mensaje
+  console.warn(
+    `[ai/chat] system prompt: ${systemPrompt.length} chars (~${Math.round(systemPrompt.length / 3.5)} tokens) | mode=${mode ?? 'chat'} | historial=${messages.length} mensajes`
+  );
 
   const payload = {
     model: 'deepseek-chat',
