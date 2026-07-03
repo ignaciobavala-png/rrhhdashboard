@@ -42,29 +42,39 @@ function nombreCorto(nombreCompleto: string): string {
 export function VacacionesRanking() {
   const { data, isLoading } = useQuery({
     queryKey: ['overview', 'vacaciones-ranking'],
-    queryFn: async (): Promise<VacRow[]> => {
+    queryFn: async (): Promise<{ rows: VacRow[]; anio: number | null }> => {
       const [{ data: empActivos }, { data: vacData, error }] = await Promise.all([
         supabase.from('empleados').select('id, nombre_apellido').eq('activo', true),
-        supabase.from('vacaciones').select('empleado_id, saldo_actual').eq('anio', 2025)
+        supabase.from('vacaciones').select('empleado_id, saldo_actual, anio')
       ]);
       if (error) throw error;
 
-      const empMap = new Map((empActivos ?? []).map((e) => [e.id, e.nombre_apellido ?? '']));
-      const vacMap = new Map(
-        (vacData ?? []).map((v) => [v.empleado_id, Number(v.saldo_actual ?? 0)])
+      // Último año con datos cargados (el saldo vigente)
+      const anio = (vacData ?? []).reduce<number | null>(
+        (max, v) => (max === null || v.anio > max ? v.anio : max),
+        null
       );
 
-      return [...empMap.entries()]
+      const empMap = new Map((empActivos ?? []).map((e) => [e.id, e.nombre_apellido ?? '']));
+      const vacMap = new Map(
+        (vacData ?? [])
+          .filter((v) => v.anio === anio)
+          .map((v) => [v.empleado_id, Number(v.saldo_actual ?? 0)])
+      );
+
+      const rows = [...empMap.entries()]
         .map(([id, nombre]) => ({
           nombre,
           iniciales: iniciales(nombre),
           saldo: vacMap.get(id) ?? 0
         }))
         .toSorted((a, b) => b.saldo - a.saldo);
+
+      return { rows, anio };
     }
   });
 
-  const rows = data ?? [];
+  const rows = data?.rows ?? [];
   const maxSaldo = rows[0]?.saldo ?? 1;
   const totalDias = rows.reduce((acc, r) => acc + r.saldo, 0);
   const sinSaldo = rows.filter((r) => r.saldo === 0).length;
@@ -79,7 +89,7 @@ export function VacacionesRanking() {
           </SectionHelp>
         </div>
         <CardDescription>
-          Días disponibles · 2025
+          Días disponibles · {data?.anio ?? '—'}
           {rows.length > 0 && (
             <span className='ml-2 text-foreground font-medium'>
               {totalDias}d totales

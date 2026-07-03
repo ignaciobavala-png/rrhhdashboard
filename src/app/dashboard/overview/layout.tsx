@@ -3,6 +3,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardFooter } from '@/comp
 import { Icons } from '@/components/icons';
 import { supabase } from '@/lib/supabase';
 import { VacacionesRanking } from '@/features/overview/components/vacaciones-ranking';
+import {
+  masaDelMes,
+  mesAnterior,
+  ultimoMesRepresentativo,
+  type SueldoRow
+} from '@/features/overview/lib/sueldos-kpi';
 import { SectionHelp } from '@/components/ui/section-help';
 import { sectionHelp } from '@/config/section-help';
 import React from 'react';
@@ -51,38 +57,14 @@ export default async function OverViewLayout({
     supabase.from('sueldos').select('monto, mes, anio, moneda')
   ]);
 
-  // Find max month per currency independently
-  let maxAnioARS = 0,
-    maxMesARS = 0;
-  let maxAnioUSD = 0,
-    maxMesUSD = 0;
-  for (const s of sueldosData ?? []) {
-    if (s.moneda === 'PESOS ARG') {
-      if (s.anio > maxAnioARS || (s.anio === maxAnioARS && s.mes > maxMesARS)) {
-        maxAnioARS = s.anio;
-        maxMesARS = s.mes;
-      }
-    } else if (s.moneda === 'USD') {
-      if (s.anio > maxAnioUSD || (s.anio === maxAnioUSD && s.mes > maxMesUSD)) {
-        maxAnioUSD = s.anio;
-        maxMesUSD = s.mes;
-      }
-    }
-  }
+  const sueldos = (sueldosData ?? []) as SueldoRow[];
+  const refARS = ultimoMesRepresentativo(sueldos, 'PESOS ARG');
+  const refUSD = ultimoMesRepresentativo(sueldos, 'USD');
 
-  const masaARS = (sueldosData ?? [])
-    .filter((s) => s.anio === maxAnioARS && s.mes === maxMesARS && s.moneda === 'PESOS ARG')
-    .reduce((acc, s) => acc + (s.monto ?? 0), 0);
+  const masaARS = masaDelMes(sueldos, 'PESOS ARG', refARS);
+  const masaUSD = masaDelMes(sueldos, 'USD', refUSD);
 
-  const masaUSD = (sueldosData ?? [])
-    .filter((s) => s.anio === maxAnioUSD && s.mes === maxMesUSD && s.moneda === 'USD')
-    .reduce((acc, s) => acc + (s.monto ?? 0), 0);
-
-  const prevMesARS = maxMesARS === 1 ? 12 : maxMesARS - 1;
-  const prevAnioARS = maxMesARS === 1 ? maxAnioARS - 1 : maxAnioARS;
-  const masaARSPrev = (sueldosData ?? [])
-    .filter((s) => s.anio === prevAnioARS && s.mes === prevMesARS && s.moneda === 'PESOS ARG')
-    .reduce((acc, s) => acc + (s.monto ?? 0), 0);
+  const masaARSPrev = refARS ? masaDelMes(sueldos, 'PESOS ARG', mesAnterior(refARS)) : 0;
   const deltaARS =
     masaARSPrev > 0 ? Math.round(((masaARS - masaARSPrev) / masaARSPrev) * 100) : null;
 
@@ -150,7 +132,7 @@ export default async function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                {maxMesARS > 0 ? `${MESES[maxMesARS - 1]} ${maxAnioARS}` : 'Sin datos'}
+                {refARS ? `${MESES[refARS.mes - 1]} ${refARS.anio}` : 'Sin datos'}
                 {deltaARS !== null && (
                   <span
                     className={
@@ -182,7 +164,7 @@ export default async function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                {maxMesUSD > 0 ? `${MESES[maxMesUSD - 1]} ${maxAnioUSD}` : 'Sin datos'}{' '}
+                {refUSD ? `${MESES[refUSD.mes - 1]} ${refUSD.anio}` : 'Sin datos'}{' '}
                 <Icons.payroll className='size-4' />
               </div>
               <div className='text-muted-foreground'>Dólares · último mes</div>

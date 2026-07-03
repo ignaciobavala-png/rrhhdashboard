@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { SectionHelp } from '@/components/ui/section-help';
 import { sectionHelp } from '@/config/section-help';
+import { ultimoMesRepresentativo, type SueldoRow } from '@/features/overview/lib/sueldos-kpi';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -37,8 +38,14 @@ export function MasaSalarialChart() {
         .order('mes');
       if (error) throw error;
 
+      // Cortar en el último mes representativo: los sueldos cargados por
+      // adelantado (una sola fila en meses futuros) hunden el gráfico
+      const corte = ultimoMesRepresentativo((data ?? []) as SueldoRow[], 'PESOS ARG');
+
       const byMonth: Record<string, { ars: number; label: string }> = {};
       for (const row of data ?? []) {
+        if (corte && (row.anio > corte.anio || (row.anio === corte.anio && row.mes > corte.mes)))
+          continue;
         const key = `${row.anio}-${String(row.mes).padStart(2, '0')}`;
         if (!byMonth[key]) byMonth[key] = { ars: 0, label: `${MESES[row.mes - 1]} ${row.anio}` };
         byMonth[key].ars += row.monto ?? 0;
