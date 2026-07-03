@@ -109,6 +109,14 @@ export const navGroups: NavGroup[] = [
         isActive: false,
         shortcut: ['n', 'n'],
         items: []
+      },
+      {
+        title: 'Configuración',
+        url: '/dashboard/settings',
+        icon: 'settings',
+        isActive: false,
+        shortcut: ['c', 'f'],
+        items: []
       }
     ]
   }
