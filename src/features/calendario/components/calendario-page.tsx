@@ -30,7 +30,11 @@ import {
   getEventosCalendario,
   getEmpleadosCumpleanos,
   getEmpleadosActivos,
-  registrarVacaciones
+  registrarVacaciones,
+  crearEvento,
+  actualizarEvento,
+  eliminarEvento,
+  type EventoCalendarioInput
 } from '@/features/calendario/api/service';
 import { getTodasLasReuniones } from '@/features/reuniones/api/service';
 import type { EventoCalendario } from '@/features/calendario/api/types';
@@ -56,11 +60,10 @@ function shortName(nombreApellido: string): string {
 
 export default function CalendarioPage() {
   const queryClient = useQueryClient();
-  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 4));
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedTipos, setSelectedTipos] = useState<Set<string>>(
     new Set(['licencia', 'estudio', 'ausencia', 'cumpleanos', 'mudanza'])
   );
-  const [manualEventos, setManualEventos] = useState<EventoCalendario[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [vacDialogOpen, setVacDialogOpen] = useState(false);
   const [reunionDialogOpen, setReunionDialogOpen] = useState(false);
@@ -139,7 +142,9 @@ export default function CalendarioPage() {
         tipo: ev.tipo as EventoCalendario['tipo'],
         empleado: shortName(ev.nombre_apellido),
         empleadoId: ev.empleado_id,
-        readonly: true
+        descripcion: ev.descripcion ?? undefined,
+        readonly: false,
+        eventoId: ev.id
       });
     }
 
@@ -174,10 +179,7 @@ export default function CalendarioPage() {
     return result;
   }, [vacDias, eventosRows, empleados, viewYear, reunionesData]);
 
-  const allEventos = useMemo(
-    () => [...eventosBase, ...manualEventos],
-    [eventosBase, manualEventos]
-  );
+  const allEventos = eventosBase;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -240,18 +242,29 @@ export default function CalendarioPage() {
     }
   };
 
-  const handleSave = (evento: Omit<EventoCalendario, 'id'>) => {
-    if (editingEvento) {
-      setManualEventos((prev) =>
-        prev.map((e) => (e.id === editingEvento.id ? { ...e, ...evento } : e))
-      );
-    } else {
-      setManualEventos((prev) => [...prev, { ...evento, id: `manual-${Date.now()}` }]);
+  const handleSave = async (input: EventoCalendarioInput, eventoId?: number) => {
+    try {
+      if (eventoId !== undefined) {
+        await actualizarEvento(eventoId, input);
+        toast.success('Evento actualizado');
+      } else {
+        await crearEvento(input);
+        toast.success('Evento creado');
+      }
+      queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+    } catch (err) {
+      toast.error(`No se pudo guardar el evento: ${(err as Error).message}`);
     }
   };
 
-  const handleDelete = (id: string) => {
-    setManualEventos((prev) => prev.filter((e) => e.id !== id));
+  const handleDelete = async (eventoId: number) => {
+    try {
+      await eliminarEvento(eventoId);
+      toast.success('Evento eliminado');
+      queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+    } catch (err) {
+      toast.error(`No se pudo eliminar el evento: ${(err as Error).message}`);
+    }
   };
 
   const handleRegistrarVacaciones = useCallback(
@@ -410,6 +423,7 @@ export default function CalendarioPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         fecha={selectedDate}
+        empleados={empleadosActivos}
         onSave={handleSave}
         onDelete={handleDelete}
         editingEvento={editingEvento}

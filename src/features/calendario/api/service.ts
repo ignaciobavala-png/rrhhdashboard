@@ -56,6 +56,28 @@ export async function getEmpleadosActivos(): Promise<EmpleadoCumpleanos[]> {
   return (data ?? []) as EmpleadoCumpleanos[];
 }
 
+export type EventoCalendarioInput = {
+  empleado_id: number;
+  tipo: 'estudio' | 'ausencia' | 'mudanza';
+  fecha: string;
+  descripcion?: string | null;
+};
+
+export async function crearEvento(input: EventoCalendarioInput): Promise<void> {
+  const { error } = await supabase.from('eventos_calendario').insert(input);
+  if (error) throw new Error(error.message);
+}
+
+export async function actualizarEvento(id: number, input: EventoCalendarioInput): Promise<void> {
+  const { error } = await supabase.from('eventos_calendario').update(input).eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function eliminarEvento(id: number): Promise<void> {
+  const { error } = await supabase.from('eventos_calendario').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 export async function registrarVacaciones(
   empleado_id: number,
   fecha_inicio: string,

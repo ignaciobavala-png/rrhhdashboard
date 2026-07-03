@@ -20,27 +20,22 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { Icons } from '@/components/icons';
-import type { EventoCalendario } from '@/features/calendario/api/types';
+import type { EventoCalendario, EmpleadoCumpleanos } from '@/features/calendario/api/types';
+import type { EventoCalendarioInput } from '@/features/calendario/api/service';
 
 const tipos = [
   { value: 'estudio', label: 'Día de estudio' },
   { value: 'ausencia', label: 'Ausencia' },
-  { value: 'licencia', label: 'Licencia / Vacaciones' }
+  { value: 'mudanza', label: 'Mudanza' }
 ] as const;
-
-type EventoForm = {
-  tipo: string;
-  empleado: string;
-  titulo: string;
-  descripcion: string;
-};
 
 interface EventoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   fecha: Date;
-  onSave: (evento: Omit<EventoCalendario, 'id'>) => void;
-  onDelete?: (id: string) => void;
+  empleados: EmpleadoCumpleanos[];
+  onSave: (input: EventoCalendarioInput, eventoId?: number) => void;
+  onDelete?: (eventoId: number) => void;
   editingEvento?: EventoCalendario | null;
 }
 
@@ -48,38 +43,33 @@ export function EventoDialog({
   open,
   onOpenChange,
   fecha,
+  empleados,
   onSave,
   onDelete,
   editingEvento
 }: EventoDialogProps) {
-  const [form, setForm] = useState<EventoForm>({
-    tipo: editingEvento?.tipo ?? 'estudio',
-    empleado: editingEvento?.empleado ?? '',
-    titulo: editingEvento?.titulo ?? '',
-    descripcion: editingEvento?.descripcion ?? ''
-  });
+  const [tipo, setTipo] = useState<string>('estudio');
+  const [empleadoId, setEmpleadoId] = useState<string>('');
+  const [descripcion, setDescripcion] = useState('');
 
   useEffect(() => {
-    setForm({
-      tipo: editingEvento?.tipo ?? 'estudio',
-      empleado: editingEvento?.empleado ?? '',
-      titulo: editingEvento?.titulo ?? '',
-      descripcion: editingEvento?.descripcion ?? ''
-    });
+    const tipoValido = tipos.some((t) => t.value === editingEvento?.tipo);
+    setTipo(tipoValido ? (editingEvento?.tipo as string) : 'estudio');
+    setEmpleadoId(editingEvento?.empleadoId ? String(editingEvento.empleadoId) : '');
+    setDescripcion(editingEvento?.descripcion ?? '');
   }, [editingEvento, open]);
 
   const handleSubmit = () => {
-    if (!form.empleado.trim()) return;
-    onSave({
-      fecha: format(fecha),
-      tipo: form.tipo as EventoCalendario['tipo'],
-      titulo: form.titulo
-        ? form.titulo
-        : (tipos.find((t) => t.value === form.tipo)?.label ?? form.tipo),
-      empleado: form.empleado,
-      empleadoId: 0,
-      descripcion: form.descripcion
-    });
+    if (!empleadoId) return;
+    onSave(
+      {
+        empleado_id: Number(empleadoId),
+        tipo: tipo as EventoCalendarioInput['tipo'],
+        fecha: format(fecha),
+        descripcion: descripcion.trim() || null
+      },
+      editingEvento?.eventoId
+    );
     onOpenChange(false);
   };
 
@@ -95,13 +85,14 @@ export function EventoDialog({
               month: 'long',
               year: 'numeric'
             })}
+            {' · '}Para vacaciones usá el botón «Vacaciones»
           </DialogDescription>
         </DialogHeader>
 
         <div className='space-y-4 py-2'>
           <div className='space-y-2'>
             <Label htmlFor='tipo'>Tipo</Label>
-            <Select value={form.tipo} onValueChange={(v) => setForm((f) => ({ ...f, tipo: v }))}>
+            <Select value={tipo} onValueChange={setTipo}>
               <SelectTrigger id='tipo'>
                 <SelectValue />
               </SelectTrigger>
@@ -117,41 +108,37 @@ export function EventoDialog({
 
           <div className='space-y-2'>
             <Label htmlFor='empleado'>Empleado</Label>
-            <Input
-              id='empleado'
-              value={form.empleado}
-              onChange={(e) => setForm((f) => ({ ...f, empleado: e.target.value }))}
-              placeholder='Nombre del empleado'
-            />
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='titulo'>Título (opcional)</Label>
-            <Input
-              id='titulo'
-              value={form.titulo}
-              onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
-              placeholder='Ej: Examen final, Baja médica...'
-            />
+            <Select value={empleadoId} onValueChange={setEmpleadoId}>
+              <SelectTrigger id='empleado'>
+                <SelectValue placeholder='Seleccionar empleado' />
+              </SelectTrigger>
+              <SelectContent>
+                {empleados.map((e) => (
+                  <SelectItem key={e.id} value={String(e.id)}>
+                    {e.nombre_apellido}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className='space-y-2'>
             <Label htmlFor='descripcion'>Descripción (opcional)</Label>
             <Input
               id='descripcion'
-              value={form.descripcion}
-              onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
-              placeholder='Notas adicionales'
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder='Ej: Examen final, trámite personal...'
             />
           </div>
         </div>
 
         <DialogFooter className='gap-2'>
-          {editingEvento && onDelete && (
+          {editingEvento?.eventoId !== undefined && onDelete && (
             <Button
               variant='destructive'
               onClick={() => {
-                onDelete(editingEvento.id);
+                onDelete(editingEvento.eventoId!);
                 onOpenChange(false);
               }}
             >
@@ -161,7 +148,7 @@ export function EventoDialog({
           <Button variant='outline' onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={!form.empleado.trim()}>
+          <Button onClick={handleSubmit} disabled={!empleadoId}>
             {editingEvento ? 'Guardar' : 'Agregar'}
           </Button>
         </DialogFooter>

@@ -26,6 +26,7 @@ export type EventoCalendario = {
   descripcion?: string;
   readonly?: boolean;
   reunionId?: number;
+  eventoId?: number;
 };
 
 export type EventoCalendarioRow = {
