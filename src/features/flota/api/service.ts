@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { ilikePattern } from '@/lib/utils';
 import type { LineaMovil, LineasMovilesFilters, LineasMovilesResponse } from './types';
 
 export async function getLineasMoviles(
@@ -12,9 +13,8 @@ export async function getLineasMoviles(
     .select('*, empleados(nombre_apellido)', { count: 'exact' });
 
   if (search) {
-    query = query.or(
-      `numero.ilike.%${search}%,rol.ilike.%${search}%,usuario.ilike.%${search}%,equipo.ilike.%${search}%`
-    );
+    const q = ilikePattern(search);
+    query = query.or(`numero.ilike.${q},rol.ilike.${q},usuario.ilike.${q},equipo.ilike.${q}`);
   }
 
   query = query.order('numero', { ascending: true }).range(offset, offset + limit - 1);

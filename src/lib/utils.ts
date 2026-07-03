@@ -5,6 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Patrón ilike seguro para usar dentro de .or() de PostgREST: los valores con
+// comas o paréntesis rompen el parser del filtro salvo que vayan entre comillas
+export function ilikePattern(value: string): string {
+  return `"%${value.replace(/["\\]/g, ' ')}%"`;
+}
+
 export function formatBytes(
   bytes: number,
   opts: {

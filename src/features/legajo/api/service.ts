@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { ilikePattern } from '@/lib/utils';
 import type {
   Empleado,
   EmpleadosFilters,
@@ -11,11 +12,12 @@ export async function getEmpleados(filters: EmpleadosFilters = {}): Promise<Empl
   const { page = 1, limit = 10, search, sort } = filters;
   const offset = (page - 1) * limit;
 
-  let query = supabase.from('empleados').select('*', { count: 'exact' });
+  let query = supabase.from('empleados').select('*, puestos(puesto)', { count: 'exact' });
 
   if (search) {
+    const q = ilikePattern(search);
     query = query.or(
-      `nombre_apellido.ilike.%${search}%,dni.ilike.%${search}%,email.ilike.%${search}%,equipo_ingreso.ilike.%${search}%`
+      `nombre_apellido.ilike.${q},dni.ilike.${q},email.ilike.${q},equipo_ingreso.ilike.${q}`
     );
   }
 
@@ -49,13 +51,10 @@ export async function getEmpleados(filters: EmpleadosFilters = {}): Promise<Empl
 
   if (error) throw new Error(error.message);
 
-  const { data: puestos } = await supabase.from('puestos').select('empleado_id, puesto');
-  const puestosMap = new Map((puestos ?? []).map((p) => [p.empleado_id, p.puesto]));
-
-  const items = (empleados ?? []).map((emp) => ({
-    ...emp,
-    puesto: puestosMap.get(emp.id) ?? null
-  }));
+  const items = (empleados ?? []).map(({ puestos, ...emp }) => {
+    const p = Array.isArray(puestos) ? puestos[0] : puestos;
+    return { ...emp, puesto: (p as { puesto: string } | null)?.puesto ?? null };
+  });
 
   return { items: items as Empleado[], total_items: count ?? 0 };
 }
@@ -171,24 +170,13 @@ export async function updateEmpleado(
 
 export async function upsertPuesto(empleadoId: number, puesto: string | null) {
   if (puesto) {
-    const { data: existing } = await supabase
+    const { error } = await supabase
       .from('puestos')
-      .select('id')
-      .eq('empleado_id', empleadoId)
-      .maybeSingle();
-
-    if (existing) {
-      const { error } = await supabase
-        .from('puestos')
-        .update({ puesto })
-        .eq('empleado_id', empleadoId);
-      if (error) throw new Error(error.message);
-    } else {
-      const { error } = await supabase.from('puestos').insert({ empleado_id: empleadoId, puesto });
-      if (error) throw new Error(error.message);
-    }
+      .upsert({ empleado_id: empleadoId, puesto }, { onConflict: 'empleado_id' });
+    if (error) throw new Error(error.message);
   } else {
-    await supabase.from('puestos').delete().eq('empleado_id', empleadoId);
+    const { error } = await supabase.from('puestos').delete().eq('empleado_id', empleadoId);
+    if (error) throw new Error(error.message);
   }
 }
 

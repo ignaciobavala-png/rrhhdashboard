@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { ilikePattern } from '@/lib/utils';
 import type { Reunion, ReunionInput, ReunionesFilters, ReunionesResponse } from './types';
 
 export async function getReuniones(filters: ReunionesFilters = {}): Promise<ReunionesResponse> {
@@ -8,7 +9,8 @@ export async function getReuniones(filters: ReunionesFilters = {}): Promise<Reun
   let query = supabase.from('reuniones').select('*', { count: 'exact' });
 
   if (search) {
-    query = query.or(`titulo.ilike.%${search}%,resumen.ilike.%${search}%`);
+    const q = ilikePattern(search);
+    query = query.or(`titulo.ilike.${q},resumen.ilike.${q}`);
   }
 
   query = query.order('fecha', { ascending: false }).range(offset, offset + limit - 1);

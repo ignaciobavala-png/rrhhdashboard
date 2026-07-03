@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { ilikePattern } from '@/lib/utils';
 import type { Laptop, LaptopInput, LaptopsFilters, LaptopsResponse } from './types';
 
 export async function getLaptops(filters: LaptopsFilters = {}): Promise<LaptopsResponse> {
@@ -10,9 +11,8 @@ export async function getLaptops(filters: LaptopsFilters = {}): Promise<LaptopsR
     .select('*, empleados(nombre_apellido)', { count: 'exact' });
 
   if (search) {
-    query = query.or(
-      `marca.ilike.%${search}%,modelo.ilike.%${search}%,numero_serie.ilike.%${search}%`
-    );
+    const q = ilikePattern(search);
+    query = query.or(`marca.ilike.${q},modelo.ilike.${q},numero_serie.ilike.${q}`);
   }
 
   query = query.order('created_at', { ascending: false }).range(offset, offset + limit - 1);

@@ -65,12 +65,14 @@ export async function POST(request: Request) {
       affected++;
     }
   } else if (action.type === 'delete' && action.match_column) {
+    // Solo empleados tiene columna `activo`; en el resto es borrado real
+    const softDelete = action.table === 'empleados';
     for (const record of action.records) {
       const matchVal = record[action.match_column];
-      const { error } = await db
-        .from(action.table as never)
-        .update({ activo: false })
-        .eq(action.match_column, matchVal);
+      const query = db.from(action.table as never);
+      const { error } = softDelete
+        ? await query.update({ activo: false }).eq(action.match_column, matchVal)
+        : await query.delete().eq(action.match_column, matchVal);
       if (error) {
         errorMsg = error.message;
         break;

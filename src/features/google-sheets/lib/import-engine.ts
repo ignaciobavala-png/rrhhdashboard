@@ -446,11 +446,21 @@ async function importLineasMoviles(
       .maybeSingle();
 
     if (existing) {
-      await supabase.from('lineas_moviles').update(mapped).eq('id', existing.id);
-      updated++;
+      const { error } = await supabase.from('lineas_moviles').update(mapped).eq('id', existing.id);
+      if (error) {
+        console.error('[import] lineas_moviles update:', error.message);
+        skipped++;
+      } else {
+        updated++;
+      }
     } else {
-      await supabase.from('lineas_moviles').insert(mapped);
-      created++;
+      const { error } = await supabase.from('lineas_moviles').insert(mapped);
+      if (error) {
+        console.error('[import] lineas_moviles insert:', error.message);
+        skipped++;
+      } else {
+        created++;
+      }
     }
   }
 
@@ -496,11 +506,21 @@ async function importLaptops(
     }
 
     if (existing) {
-      await supabase.from('flota_laptops').update(mapped).eq('id', existing.id);
-      updated++;
+      const { error } = await supabase.from('flota_laptops').update(mapped).eq('id', existing.id);
+      if (error) {
+        console.error('[import] flota_laptops update:', error.message);
+        skipped++;
+      } else {
+        updated++;
+      }
     } else {
-      await supabase.from('flota_laptops').insert(mapped);
-      created++;
+      const { error } = await supabase.from('flota_laptops').insert(mapped);
+      if (error) {
+        console.error('[import] flota_laptops insert:', error.message);
+        skipped++;
+      } else {
+        created++;
+      }
     }
   }
 
@@ -662,8 +682,11 @@ export async function importSheetData(
       result = await importSueldos(rows, headers, tabName);
       break;
     case 'Flota':
-      // Try lines first (look for "numero" column), fallback to laptops
-      if (headers.some((h) => matchPattern(h, ['Numero', 'Número', 'Línea', 'Linea']))) {
+      // Laptops primero: "Numero de serie" también matchea el patrón "Numero"
+      // de líneas móviles y desviaba las tabs de equipos (bug de flota_laptops vacía)
+      if (headers.some((h) => matchPattern(h, ['Numero de Serie', 'Serie', 'SN']))) {
+        result = await importLaptops(rows, headers);
+      } else if (headers.some((h) => matchPattern(h, ['Numero', 'Número', 'Línea', 'Linea']))) {
         result = await importLineasMoviles(rows, headers);
       } else {
         result = await importLaptops(rows, headers);
