@@ -97,11 +97,23 @@ Migración `20260709_00005_auditoria_produccion.sql` (`9913b19`):
 |---|---|
 | 6 funciones sin `search_path` fijo (`get_vacaciones_calendario`, `get_eventos_calendario`, `registrar_vacaciones`, `trigger_set_updated_at`, `update_ai_session_timestamp`, `log_change`) — riesgo de schema injection | `ALTER FUNCTION ... SET search_path = public, pg_temp` |
 | Buckets públicos `expedientes`/`manuales` permitían **listar** todos los archivos vía API (no solo acceder por URL directa) | Se elimina la policy de `SELECT` sobre `storage.objects` — el acceso por URL pública no la necesita |
-| Tabla `app_config`: RLS habilitada sin ninguna policy, 0 filas, sin ninguna referencia en el código ni en las migraciones trackeadas (drift del scaffold inicial) | `DROP TABLE` — confirmado con el usuario que era cruft del template |
+| ~~Tabla `app_config`: RLS habilitada sin ninguna policy, 0 filas, sin ninguna referencia en el código~~ | ~~`DROP TABLE`~~ — **ERROR, ver incidente §7.1 abajo** |
 | 12 tablas con policy `_select` redundante además de `_write` (`ALL`, `using(true)`) que ya cubre lectura | Se consolidan; se alinean antes `vacaciones`/`vacaciones_dias` al patrón `anon+authenticated` para no perder acceso de `anon` |
 | 5 foreign keys sin índice (`documentos_empleados.empresa_id`, `lineas_moviles.empleado_id`, `sheet_sections.{sheet_id,sync_id}`, `sheet_syncs.sheet_id`) | `CREATE INDEX` |
 
 Verificado con `get_advisors` antes y después — sin regresiones sobre la línea base ya aceptada (RLS permisiva por decisión de producto, ver `project_rrhh_auth_decision` en memoria).
+
+### 7.1. Incidente: `app_config` sí estaba en uso — login roto y restaurado
+
+La conclusión de "tabla huérfana" de la tabla de arriba fue un **error de diagnóstico**. `app_config` es donde `verify_pin()`/`change_pin()` guardan el hash bcrypt del PIN de acceso (`key='pin_hash'`) y el estado de intentos fallidos (`key='pin_state'`) — accedida solo desde SQL dentro de esas funciones `SECURITY DEFINER`, por eso un grep sobre el código TypeScript no la encontró. El `DROP TABLE` de la migración `20260709_00005` **rompió el login del dashboard en producción** (el endpoint devolvía un error crudo `relation "app_config" does not exist`).
+
+**Resolución** (migración `20260709_00009_restaurar_app_config.sql`):
+1. Se reconstruyó el schema de `app_config` a partir de los cuerpos de `verify_pin`/`change_pin` (tampoco existía una migración local que la creara originalmente — era otro caso de drift, aplicada directo a producción en su momento).
+2. El hash del PIN anterior **no era recuperable** (bcrypt de un solo sentido, sin backup previo al drop) — se generó y sembró un PIN nuevo con el usuario.
+3. Verificado en vivo con `select verify_pin('...')` antes de dar el incidente por cerrado.
+4. `get_advisors` post-fix confirma que quedó exactamente en el mismo estado original (RLS habilitada, sin policies — acceso solo vía las funciones `SECURITY DEFINER`, ese es el diseño correcto, no un descuido).
+
+**Lección aplicada**: antes de dropear cualquier tabla en producción, no alcanza con grepear el código de la app — hay que revisar también si algún trigger o función `SECURITY DEFINER` la referencia (`select pg_get_functiondef(oid) from pg_proc where prosrc ilike '%nombre_tabla%'`), y confirmar el conteo real de filas con una query directa, no asumirlo.
 
 ---
 
