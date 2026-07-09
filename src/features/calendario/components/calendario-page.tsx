@@ -21,6 +21,12 @@ import { es } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { EventoDialog } from './evento-dialog';
@@ -298,21 +304,34 @@ export default function CalendarioPage() {
         ))}
         <div className='ml-auto flex items-center gap-2'>
           <span className='text-muted-foreground text-xs'>{totalVisible} eventos</span>
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={() => {
-              setEditingReunion(null);
-              setReunionDialogOpen(true);
-            }}
-          >
-            <Icons.add className='mr-1 h-4 w-4' />
-            Reunión
-          </Button>
-          <Button size='sm' onClick={() => setVacDialogOpen(true)}>
-            <Icons.add className='mr-1 h-4 w-4' />
-            Vacaciones
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size='sm'>
+                <Icons.add className='mr-1 h-4 w-4' />
+                Nuevo evento
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              <DropdownMenuItem onClick={() => setVacDialogOpen(true)}>Vacaciones</DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditingReunion(null);
+                  setReunionDialogOpen(true);
+                }}
+              >
+                Reunión
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setSelectedDate(new Date());
+                  setEditingEvento(null);
+                  setDialogOpen(true);
+                }}
+              >
+                Estudio / Ausencia / Mudanza
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

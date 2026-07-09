@@ -85,7 +85,7 @@ export function EventoDialog({
               month: 'long',
               year: 'numeric'
             })}
-            {' · '}Para vacaciones usá el botón «Vacaciones»
+            {' · '}Para vacaciones o reuniones usá «Nuevo evento» arriba
           </DialogDescription>
         </DialogHeader>
 
