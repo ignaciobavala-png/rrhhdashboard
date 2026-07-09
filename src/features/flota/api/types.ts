@@ -29,4 +29,7 @@ export type LineaMovilInput = {
   usuario: string;
   equipo: string;
   estado: 'asignado' | 'disponible' | 'baja';
+  empleado_id: number | null;
 };
+
+export type EmpleadoOption = { id: number; nombre_apellido: string };

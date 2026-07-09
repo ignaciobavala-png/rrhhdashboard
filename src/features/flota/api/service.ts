@@ -1,11 +1,22 @@
 import { supabase } from '@/lib/supabase';
 import { ilikePattern } from '@/lib/utils';
 import type {
+  EmpleadoOption,
   LineaMovil,
   LineaMovilInput,
   LineasMovilesFilters,
   LineasMovilesResponse
 } from './types';
+
+export async function getEmpleadosParaLinea(): Promise<EmpleadoOption[]> {
+  const { data, error } = await supabase
+    .from('empleados')
+    .select('id, nombre_apellido')
+    .eq('activo', true)
+    .order('nombre_apellido');
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmpleadoOption[];
+}
 
 export async function getLineasMoviles(
   filters: LineasMovilesFilters = {}
@@ -50,6 +61,7 @@ export async function createLineaMovil(input: LineaMovilInput): Promise<{ id: nu
       usuario: input.usuario || null,
       equipo: input.equipo || null,
       estado: input.estado,
+      empleado_id: input.empleado_id,
       orden: (count ?? 0) + 1
     })
     .select('id')
@@ -83,7 +95,8 @@ export async function updateLineaMovil(id: number, input: LineaMovilInput): Prom
       rol: input.rol || null,
       usuario: input.usuario || null,
       equipo: input.equipo || null,
-      estado: input.estado
+      estado: input.estado,
+      empleado_id: input.empleado_id
     })
     .eq('id', id);
   if (error) throw new Error(error.message);

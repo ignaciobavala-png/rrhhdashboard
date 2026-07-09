@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,12 @@ import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { showUndoToast } from '@/lib/undo-toast';
-import { createLineaMovil, deleteLineaMovil, updateLineaMovil } from '../api/service';
+import {
+  createLineaMovil,
+  deleteLineaMovil,
+  getEmpleadosParaLinea,
+  updateLineaMovil
+} from '../api/service';
 import type { LineaMovil, LineaMovilInput } from '../api/types';
 
 const EMPTY: LineaMovilInput = {
@@ -23,7 +28,8 @@ const EMPTY: LineaMovilInput = {
   rol: '',
   usuario: '',
   equipo: '',
-  estado: 'disponible'
+  estado: 'disponible',
+  empleado_id: null
 };
 
 function toInput(linea: LineaMovil): LineaMovilInput {
@@ -32,7 +38,8 @@ function toInput(linea: LineaMovil): LineaMovilInput {
     rol: linea.rol ?? '',
     usuario: linea.usuario ?? '',
     equipo: linea.equipo ?? '',
-    estado: linea.estado
+    estado: linea.estado,
+    empleado_id: linea.empleado_id
   };
 }
 
@@ -48,6 +55,12 @@ export function LineaMovilDialog({ open, onOpenChange, linea }: LineaMovilDialog
   const [loading, setLoading] = useState(false);
   const wasOpen = useRef(false);
 
+  const { data: empleados = [] } = useQuery({
+    queryKey: ['flota', 'empleados'],
+    queryFn: getEmpleadosParaLinea,
+    enabled: open
+  });
+
   useEffect(() => {
     if (open && !wasOpen.current) setForm(linea ? toInput(linea) : EMPTY);
     wasOpen.current = open;
@@ -56,6 +69,9 @@ export function LineaMovilDialog({ open, onOpenChange, linea }: LineaMovilDialog
 
   const set = (key: keyof LineaMovilInput, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
+
+  const setEmpleadoId = (value: string) =>
+    setForm((prev) => ({ ...prev, empleado_id: value ? Number(value) : null }));
 
   const handleClose = () => {
     setForm(linea ? toInput(linea) : EMPTY);
@@ -111,6 +127,22 @@ export function LineaMovilDialog({ open, onOpenChange, linea }: LineaMovilDialog
               placeholder='Comercial, Gerencial...'
               className='h-8 text-xs'
             />
+          </div>
+
+          <div className='col-span-2 space-y-1.5'>
+            <Label className='text-xs'>Empleado asignado</Label>
+            <select
+              value={form.empleado_id ?? ''}
+              onChange={(e) => setEmpleadoId(e.target.value)}
+              className='h-8 w-full rounded-md border bg-background px-2 text-xs'
+            >
+              <option value=''>Sin asignar</option>
+              {empleados.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.nombre_apellido}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className='space-y-1.5'>

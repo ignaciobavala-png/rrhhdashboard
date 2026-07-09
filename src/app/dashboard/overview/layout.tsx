@@ -16,14 +16,11 @@ import React from 'react';
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 function formatMiles(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
+  return `$${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 }
 
 function formatUSD(n: number): string {
-  if (n >= 1_000) return `U$S ${(n / 1_000).toFixed(1)}K`;
-  return `U$S ${n.toFixed(0)}`;
+  return `U$S ${n.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 }
 
 export default async function OverViewLayout({

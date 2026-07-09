@@ -20,12 +20,6 @@ const chartConfig = {
   ars: { label: 'ARS (miles)', color: 'var(--chart-1)' }
 } satisfies ChartConfig;
 
-function formatTick(v: number): string {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`;
-  return `$${v}`;
-}
-
 function formatExacto(v: number): string {
   return `$${v.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 }
@@ -78,7 +72,7 @@ export function MasaSalarialChart() {
           Últimos meses · ARS
           {total > 0 && (
             <span className='ml-2 font-semibold text-foreground'>
-              {formatTick(total)} último mes
+              {formatExacto(total)} último mes
             </span>
           )}
         </CardDescription>
@@ -108,8 +102,8 @@ export function MasaSalarialChart() {
                 axisLine={false}
                 tickMargin={8}
                 tick={{ fontSize: 10 }}
-                tickFormatter={formatTick}
-                width={56}
+                tickFormatter={formatExacto}
+                width={88}
               />
               <ChartTooltip
                 cursor={false}

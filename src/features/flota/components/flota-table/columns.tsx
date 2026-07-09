@@ -119,7 +119,8 @@ function DeleteCell({ linea }: { linea: LineaMovil }) {
           rol: saved.rol ?? '',
           usuario: saved.usuario ?? '',
           equipo: saved.equipo ?? '',
-          estado: saved.estado
+          estado: saved.estado,
+          empleado_id: saved.empleado_id
         });
         queryClient.invalidateQueries({ queryKey: ['flota'] });
       });
