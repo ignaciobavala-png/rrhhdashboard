@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { getEmpleadosParaSueldo, upsertSueldo } from '../api/service';
+import { getEmpleadosParaSueldo, getSueldosByAnio, upsertSueldo } from '../api/service';
 import type { SueldoInput } from '../api/types';
 
 const MESES = [
@@ -61,9 +61,29 @@ export function SueldoDialog({ open, onOpenChange, anio }: SueldoDialogProps) {
     enabled: open
   });
 
+  const { data: sueldosDelAnio = [] } = useQuery({
+    queryKey: ['payroll', 'sueldos', anio],
+    queryFn: () => getSueldosByAnio(anio),
+    enabled: open
+  });
+
   useEffect(() => {
     if (open) setForm(buildEmpty(anio));
   }, [open, anio]);
+
+  useEffect(() => {
+    if (!form.empleado_id) return;
+    const existente = sueldosDelAnio.find(
+      (s) => s.empleado_id === form.empleado_id && s.mes === form.mes
+    );
+    setForm((prev) => ({
+      ...prev,
+      moneda: existente?.moneda ?? prev.moneda,
+      monto: existente ? existente.monto : null,
+      bono_anual: existente ? existente.bono_anual : null
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.empleado_id, form.mes, sueldosDelAnio]);
 
   const set = <K extends keyof SueldoInput>(key: K, value: SueldoInput[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));

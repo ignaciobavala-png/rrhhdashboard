@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -53,10 +53,13 @@ export function LaptopDialog({ open, onOpenChange, laptop }: LaptopDialogProps) 
   const queryClient = useQueryClient();
   const [form, setForm] = useState<LaptopInput>(() => (laptop ? toInput(laptop) : EMPTY));
   const [loading, setLoading] = useState(false);
+  const wasOpen = useRef(false);
 
   useEffect(() => {
-    if (open) setForm(laptop ? toInput(laptop) : EMPTY);
-  }, [open, laptop]);
+    if (open && !wasOpen.current) setForm(laptop ? toInput(laptop) : EMPTY);
+    wasOpen.current = open;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const set = (key: keyof LaptopInput, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -46,10 +46,13 @@ export function LineaMovilDialog({ open, onOpenChange, linea }: LineaMovilDialog
   const queryClient = useQueryClient();
   const [form, setForm] = useState<LineaMovilInput>(() => (linea ? toInput(linea) : EMPTY));
   const [loading, setLoading] = useState(false);
+  const wasOpen = useRef(false);
 
   useEffect(() => {
-    if (open) setForm(linea ? toInput(linea) : EMPTY);
-  }, [open, linea]);
+    if (open && !wasOpen.current) setForm(linea ? toInput(linea) : EMPTY);
+    wasOpen.current = open;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const set = (key: keyof LineaMovilInput, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
