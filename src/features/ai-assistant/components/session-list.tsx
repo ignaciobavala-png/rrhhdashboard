@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
+import { toast } from 'sonner';
 import { getSessions, getSessionMessages } from '../api/service';
 import type { AiSession, AiMessage } from '../api/service';
 import type { ChatMessage } from '../api/types';
@@ -40,7 +41,9 @@ export function SessionList({
     try {
       const data = await getSessions(30);
       setSessions(data);
-    } catch {}
+    } catch {
+      toast.error('No se pudo cargar el historial de conversaciones');
+    }
     setLoading(false);
   }, []);
 
@@ -54,7 +57,9 @@ export function SessionList({
     try {
       const dbMessages = await getSessionMessages(session.id);
       onSelectSession(session.id, dbMessages.map(dbMessageToChat));
-    } catch {}
+    } catch {
+      toast.error('No se pudo cargar esa conversación');
+    }
     setLoadingId(null);
   };
 

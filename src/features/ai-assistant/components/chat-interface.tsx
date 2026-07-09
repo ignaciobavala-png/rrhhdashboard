@@ -141,7 +141,9 @@ export function ChatInterface({
         }
         const dbMsg = await saveMessage(sessionIdRef.current, 'user', content);
         dbUserMsgIdRef.current = dbMsg.id;
-      } catch {}
+      } catch {
+        toast.warning('No se pudo guardar la conversación (se perderá al recargar la página)');
+      }
     })();
 
     try {
@@ -192,7 +194,11 @@ export function ChatInterface({
             const dbMsg = await saveMessage(sessionIdRef.current, 'assistant', fullContent);
             dbAssistantMsgIdRef.current = dbMsg.id;
           }
-        } catch {}
+        } catch {
+          toast.warning(
+            'No se pudo guardar la respuesta del asistente (se perderá al recargar la página)'
+          );
+        }
       })();
 
       // Parse proposed action if in build mode

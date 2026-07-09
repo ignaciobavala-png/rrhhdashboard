@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { ProposedAction } from '../api/types';
 
 const RISK_COLORS = {
@@ -27,6 +28,15 @@ type Props = {
 
 export function ActionPreview({ action, onApprove, onReject, isExecuting }: Props) {
   const [showRecords, setShowRecords] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleEjecutar = () => {
+    if (action.risk === 'high') {
+      setConfirmOpen(true);
+    } else {
+      onApprove();
+    }
+  };
 
   if (action.status === 'executed') {
     return (
@@ -108,7 +118,7 @@ export function ActionPreview({ action, onApprove, onReject, isExecuting }: Prop
       )}
 
       <div className='flex gap-2 pt-1'>
-        <Button size='sm' className='h-7 text-xs' onClick={onApprove} disabled={isExecuting}>
+        <Button size='sm' className='h-7 text-xs' onClick={handleEjecutar} disabled={isExecuting}>
           {isExecuting ? (
             <Icons.spinner className='mr-1 h-3 w-3 animate-spin' />
           ) : (
@@ -126,6 +136,20 @@ export function ActionPreview({ action, onApprove, onReject, isExecuting }: Prop
           Rechazar
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title='⚠️ Acción de riesgo alto'
+        description={`${action.description} — Esta acción afecta la tabla "${action.table}" y no se puede deshacer automáticamente. Confirmá que revisaste los datos antes de ejecutarla.`}
+        confirmLabel='Sí, ejecutar'
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onApprove();
+        }}
+        loading={isExecuting}
+        destructive
+      />
     </div>
   );
 }

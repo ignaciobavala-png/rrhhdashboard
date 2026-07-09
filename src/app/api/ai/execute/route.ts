@@ -54,15 +54,16 @@ export async function POST(request: Request) {
   } else if (action.type === 'update' && action.match_column) {
     for (const record of action.records) {
       const matchVal = record[action.match_column];
-      const { error } = await db
+      const { data, error } = await db
         .from(action.table as never)
         .update(record)
-        .eq(action.match_column, matchVal);
+        .eq(action.match_column, matchVal)
+        .select();
       if (error) {
         errorMsg = error.message;
         break;
       }
-      affected++;
+      affected += (data as unknown[]).length;
     }
   } else if (action.type === 'delete' && action.match_column) {
     // Solo empleados tiene columna `activo`; en el resto es borrado real
@@ -70,14 +71,14 @@ export async function POST(request: Request) {
     for (const record of action.records) {
       const matchVal = record[action.match_column];
       const query = db.from(action.table as never);
-      const { error } = softDelete
-        ? await query.update({ activo: false }).eq(action.match_column, matchVal)
-        : await query.delete().eq(action.match_column, matchVal);
+      const { data, error } = softDelete
+        ? await query.update({ activo: false }).eq(action.match_column, matchVal).select()
+        : await query.delete().eq(action.match_column, matchVal).select();
       if (error) {
         errorMsg = error.message;
         break;
       }
-      affected++;
+      affected += (data as unknown[]).length;
     }
   } else {
     return NextResponse.json({ error: 'Tipo de acción no soportado' }, { status: 400 });
