@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useSuspenseQuery,
+  useMutation,
+  useQueryClient,
+  type QueryClient
+} from '@tanstack/react-query';
 import {
   Accordion,
   AccordionContent,
@@ -25,6 +30,31 @@ async function triggerSync(sheetId: string, url: string): Promise<SyncResult> {
   });
   if (!res.ok) throw new Error('Error al sincronizar');
   return res.json();
+}
+
+function invalidateForSections(queryClient: QueryClient, results: SyncResult[]) {
+  const sections = new Set<string>();
+  for (const r of results) {
+    for (const t of r.tabs) {
+      if (t.suggestedSection) sections.add(t.suggestedSection);
+    }
+  }
+
+  if (sections.has('Legajo') || sections.has('People')) {
+    queryClient.invalidateQueries({ queryKey: ['legajo'] });
+    queryClient.invalidateQueries({ queryKey: ['overview'] });
+  }
+  if (sections.has('Vacaciones')) {
+    queryClient.invalidateQueries({ queryKey: ['calendario'] });
+    queryClient.invalidateQueries({ queryKey: ['overview'] });
+  }
+  if (sections.has('Sueldos')) queryClient.invalidateQueries({ queryKey: ['payroll'] });
+  if (sections.has('Flota')) {
+    queryClient.invalidateQueries({ queryKey: ['flota'] });
+    queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
+  }
+  queryClient.invalidateQueries({ queryKey: ['calendario'] });
+  queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
 }
 
 function reportImportIssues(results: SyncResult[]) {
@@ -63,8 +93,7 @@ export function GoogleSheetsListing() {
     try {
       const result = await triggerSync(sheet.id, sheet.url);
       queryClient.invalidateQueries({ queryKey: ['sheet-syncs', sheet.id] });
-      queryClient.invalidateQueries({ queryKey: ['calendario'] });
-      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+      invalidateForSections(queryClient, [result]);
 
       let totalImported = 0;
       for (const t of result.tabs) {
@@ -86,27 +115,14 @@ export function GoogleSheetsListing() {
     try {
       const results = await Promise.all(sheets.map((s) => triggerSync(s.id, s.url)));
       sheets.forEach((s) => queryClient.invalidateQueries({ queryKey: ['sheet-syncs', s.id] }));
+      invalidateForSections(queryClient, results);
 
-      // Count total imported
       let totalImported = 0;
-      const sections = new Set<string>();
       for (const r of results) {
         for (const t of r.tabs) {
           totalImported += (t.importCreated ?? 0) + (t.importUpdated ?? 0);
-          if (t.suggestedSection) sections.add(t.suggestedSection);
         }
       }
-
-      if (sections.has('Legajo') || sections.has('People'))
-        queryClient.invalidateQueries({ queryKey: ['empleados'] });
-      if (sections.has('Vacaciones')) queryClient.invalidateQueries({ queryKey: ['vacaciones'] });
-      if (sections.has('Sueldos')) queryClient.invalidateQueries({ queryKey: ['sueldos'] });
-      if (sections.has('Flota')) {
-        queryClient.invalidateQueries({ queryKey: ['lineas-moviles'] });
-        queryClient.invalidateQueries({ queryKey: ['laptops'] });
-      }
-      queryClient.invalidateQueries({ queryKey: ['calendario'] });
-      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
 
       let msg = `${sheets.length} ${sheets.length === 1 ? 'sheet sincronizado' : 'sheets sincronizados'}`;
       if (totalImported > 0) msg += ` — ${totalImported} registros importados`;
