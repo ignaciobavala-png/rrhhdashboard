@@ -8,6 +8,7 @@ export type LineaMovil = {
   usuario: string | null;
   equipo: string | null;
   estado: 'asignado' | 'disponible' | 'baja';
+  orden: number;
   created_at: string;
 };
 

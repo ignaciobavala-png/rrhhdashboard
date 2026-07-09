@@ -22,7 +22,7 @@ export async function getLineasMoviles(
     query = query.or(`numero.ilike.${q},rol.ilike.${q},usuario.ilike.${q},equipo.ilike.${q}`);
   }
 
-  query = query.order('numero', { ascending: true }).range(offset, offset + limit - 1);
+  query = query.order('orden', { ascending: true }).range(offset, offset + limit - 1);
 
   const { data, error, count } = await query;
 
@@ -37,6 +37,10 @@ export async function getLineasMoviles(
 }
 
 export async function createLineaMovil(input: LineaMovilInput): Promise<{ id: number }> {
+  const { count } = await supabase
+    .from('lineas_moviles')
+    .select('id', { count: 'exact', head: true });
+
   const { data, error } = await supabase
     .from('lineas_moviles')
     .insert({
@@ -45,12 +49,30 @@ export async function createLineaMovil(input: LineaMovilInput): Promise<{ id: nu
       rol: input.rol || null,
       usuario: input.usuario || null,
       equipo: input.equipo || null,
-      estado: input.estado
+      estado: input.estado,
+      orden: (count ?? 0) + 1
     })
     .select('id')
     .single();
   if (error) throw new Error(error.message);
   return data as { id: number };
+}
+
+export async function swapOrdenLineaMovil(
+  a: { id: number; orden: number },
+  b: { id: number; orden: number }
+): Promise<void> {
+  const { error: e1 } = await supabase
+    .from('lineas_moviles')
+    .update({ orden: b.orden })
+    .eq('id', a.id);
+  if (e1) throw new Error(e1.message);
+
+  const { error: e2 } = await supabase
+    .from('lineas_moviles')
+    .update({ orden: a.orden })
+    .eq('id', b.id);
+  if (e2) throw new Error(e2.message);
 }
 
 export async function updateLineaMovil(id: number, input: LineaMovilInput): Promise<void> {

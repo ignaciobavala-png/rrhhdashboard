@@ -11,6 +11,7 @@ export type Laptop = {
   ubicacion: string | null;
   comentarios: string | null;
   estado: 'asignado' | 'disponible' | 'baja';
+  orden: number;
   created_at: string;
   updated_at: string;
 };

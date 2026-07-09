@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Row, Table } from '@tanstack/react-table';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { showUndoToast } from '@/lib/undo-toast';
 import type { Laptop } from '@/features/flota-laptops/api/types';
-import { createLaptop, deleteLaptop } from '@/features/flota-laptops/api/service';
+import { createLaptop, deleteLaptop, swapOrdenLaptop } from '@/features/flota-laptops/api/service';
 import { LaptopDialog } from '@/features/flota-laptops/components/laptop-dialog';
 
 const SIN_INFO = <span className='text-muted-foreground italic text-xs'>—</span>;
@@ -27,6 +27,56 @@ const estadoLabels: Record<string, string> = {
   disponible: 'Disponible',
   baja: 'De Baja'
 };
+
+function MoveCell({ row, table }: { row: Row<Laptop>; table: Table<Laptop> }) {
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  const rows = table.getRowModel().rows;
+  const index = rows.findIndex((r) => r.id === row.id);
+  const prev = rows[index - 1]?.original;
+  const next = rows[index + 1]?.original;
+
+  const move = async (target?: Laptop) => {
+    if (!target) return;
+    setLoading(true);
+    try {
+      await swapOrdenLaptop(
+        { id: row.original.id, orden: row.original.orden },
+        { id: target.id, orden: target.orden }
+      );
+      queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al reordenar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className='flex flex-col'>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-6 w-6'
+        disabled={!prev || loading}
+        onClick={() => move(prev)}
+        title='Subir'
+      >
+        <Icons.chevronUp className='h-3.5 w-3.5' />
+      </Button>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-6 w-6'
+        disabled={!next || loading}
+        onClick={() => move(next)}
+        title='Bajar'
+      >
+        <Icons.chevronDown className='h-3.5 w-3.5' />
+      </Button>
+    </div>
+  );
+}
 
 function EditCell({ laptop }: { laptop: Laptop }) {
   const [open, setOpen] = useState(false);
@@ -108,6 +158,12 @@ function DeleteCell({ laptop }: { laptop: Laptop }) {
 }
 
 export const columns: ColumnDef<Laptop>[] = [
+  {
+    id: 'orden',
+    cell: ({ row, table }) => <MoveCell row={row} table={table} />,
+    enableSorting: false,
+    meta: { label: 'Orden' }
+  },
   {
     id: 'marca',
     accessorKey: 'marca',

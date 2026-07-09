@@ -38,7 +38,7 @@ export function FlotaTable() {
     pageCount: Math.ceil(data.total_items / params.perPage),
     shallow: true,
     debounceMs: 500,
-    initialState: { columnPinning: { right: ['actions'] } }
+    initialState: { columnPinning: { left: ['orden'], right: ['actions'] } }
   });
 
   return (

@@ -37,7 +37,8 @@ export function LaptopsTable() {
     columns,
     pageCount: 1,
     shallow: true,
-    debounceMs: 300
+    debounceMs: 300,
+    initialState: { columnPinning: { left: ['orden'] } }
   });
 
   return (

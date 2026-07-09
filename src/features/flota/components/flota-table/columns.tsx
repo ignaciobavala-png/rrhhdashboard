@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Row, Table } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
@@ -11,7 +11,11 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Icons } from '@/components/icons';
 import { showUndoToast } from '@/lib/undo-toast';
 import type { LineaMovil } from '@/features/flota/api/types';
-import { createLineaMovil, deleteLineaMovil } from '@/features/flota/api/service';
+import {
+  createLineaMovil,
+  deleteLineaMovil,
+  swapOrdenLineaMovil
+} from '@/features/flota/api/service';
 import { LineaMovilDialog } from '@/features/flota/components/linea-movil-dialog';
 
 const SIN_INFO = <span className='text-muted-foreground italic text-xs'>Sin información</span>;
@@ -27,6 +31,56 @@ const estadoLabels: Record<string, string> = {
   disponible: 'Disponible',
   baja: 'De Baja'
 };
+
+function MoveCell({ row, table }: { row: Row<LineaMovil>; table: Table<LineaMovil> }) {
+  const queryClient = useQueryClient();
+  const [loading, setLoading] = useState(false);
+  const rows = table.getRowModel().rows;
+  const index = rows.findIndex((r) => r.id === row.id);
+  const prev = rows[index - 1]?.original;
+  const next = rows[index + 1]?.original;
+
+  const move = async (target?: LineaMovil) => {
+    if (!target) return;
+    setLoading(true);
+    try {
+      await swapOrdenLineaMovil(
+        { id: row.original.id, orden: row.original.orden },
+        { id: target.id, orden: target.orden }
+      );
+      queryClient.invalidateQueries({ queryKey: ['flota'] });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al reordenar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className='flex flex-col'>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-6 w-6'
+        disabled={!prev || loading}
+        onClick={() => move(prev)}
+        title='Subir'
+      >
+        <Icons.chevronUp className='h-3.5 w-3.5' />
+      </Button>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-6 w-6'
+        disabled={!next || loading}
+        onClick={() => move(next)}
+        title='Bajar'
+      >
+        <Icons.chevronDown className='h-3.5 w-3.5' />
+      </Button>
+    </div>
+  );
+}
 
 function EditCell({ linea }: { linea: LineaMovil }) {
   const [open, setOpen] = useState(false);
@@ -102,6 +156,12 @@ function DeleteCell({ linea }: { linea: LineaMovil }) {
 }
 
 export const columns: ColumnDef<LineaMovil>[] = [
+  {
+    id: 'orden',
+    cell: ({ row, table }) => <MoveCell row={row} table={table} />,
+    enableSorting: false,
+    meta: { label: 'Orden' }
+  },
   {
     id: 'numero',
     accessorKey: 'numero',
