@@ -49,6 +49,23 @@ export async function createLaptop(input: LaptopInput): Promise<{ id: number }> 
   return data as { id: number };
 }
 
+export async function updateLaptop(id: number, input: LaptopInput): Promise<void> {
+  const { error } = await supabase
+    .from('flota_laptops')
+    .update({
+      marca: input.marca || null,
+      modelo: input.modelo || null,
+      numero_serie: input.numero_serie || null,
+      usuario: input.usuario || null,
+      equipo: input.equipo || null,
+      ubicacion: input.ubicacion || null,
+      comentarios: input.comentarios || null,
+      estado: input.estado
+    })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 export async function deleteLaptop(id: number): Promise<void> {
   const { error } = await supabase.from('flota_laptops').delete().eq('id', id);
   if (error) throw new Error(error.message);

@@ -21,3 +21,11 @@ export type LineasMovilesFilters = {
   limit?: number;
   search?: string;
 };
+
+export type LineaMovilInput = {
+  numero: string;
+  rol: string;
+  usuario: string;
+  equipo: string;
+  estado: 'asignado' | 'disponible' | 'baja';
+};

@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { showUndoToast } from '@/lib/undo-toast';
 import type { Laptop } from '@/features/flota-laptops/api/types';
 import { createLaptop, deleteLaptop } from '@/features/flota-laptops/api/service';
+import { LaptopDialog } from '@/features/flota-laptops/components/laptop-dialog';
 
 const SIN_INFO = <span className='text-muted-foreground italic text-xs'>—</span>;
 
@@ -26,6 +27,25 @@ const estadoLabels: Record<string, string> = {
   disponible: 'Disponible',
   baja: 'De Baja'
 };
+
+function EditCell({ laptop }: { laptop: Laptop }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-8 w-8'
+        onClick={() => setOpen(true)}
+        title='Editar'
+      >
+        <Icons.edit className='h-4 w-4' />
+      </Button>
+      <LaptopDialog open={open} onOpenChange={setOpen} laptop={laptop} />
+    </>
+  );
+}
 
 function DeleteCell({ laptop }: { laptop: Laptop }) {
   const queryClient = useQueryClient();
@@ -184,6 +204,11 @@ export const columns: ColumnDef<Laptop>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <DeleteCell laptop={row.original} />
+    cell: ({ row }) => (
+      <div className='flex items-center'>
+        <EditCell laptop={row.original} />
+        <DeleteCell laptop={row.original} />
+      </div>
+    )
   }
 ];

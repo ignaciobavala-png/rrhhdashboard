@@ -1,6 +1,11 @@
 import { supabase } from '@/lib/supabase';
 import { ilikePattern } from '@/lib/utils';
-import type { LineaMovil, LineasMovilesFilters, LineasMovilesResponse } from './types';
+import type {
+  LineaMovil,
+  LineaMovilInput,
+  LineasMovilesFilters,
+  LineasMovilesResponse
+} from './types';
 
 export async function getLineasMoviles(
   filters: LineasMovilesFilters = {}
@@ -29,4 +34,40 @@ export async function getLineasMoviles(
   }));
 
   return { items: items as LineaMovil[], total_items: count ?? 0 };
+}
+
+export async function createLineaMovil(input: LineaMovilInput): Promise<{ id: number }> {
+  const { data, error } = await supabase
+    .from('lineas_moviles')
+    .insert({
+      empresa_id: 1,
+      numero: input.numero,
+      rol: input.rol || null,
+      usuario: input.usuario || null,
+      equipo: input.equipo || null,
+      estado: input.estado
+    })
+    .select('id')
+    .single();
+  if (error) throw new Error(error.message);
+  return data as { id: number };
+}
+
+export async function updateLineaMovil(id: number, input: LineaMovilInput): Promise<void> {
+  const { error } = await supabase
+    .from('lineas_moviles')
+    .update({
+      numero: input.numero,
+      rol: input.rol || null,
+      usuario: input.usuario || null,
+      equipo: input.equipo || null,
+      estado: input.estado
+    })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteLineaMovil(id: number): Promise<void> {
+  const { error } = await supabase.from('lineas_moviles').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -16,8 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { showUndoToast } from '@/lib/undo-toast';
-import { createLaptop, deleteLaptop } from '../api/service';
-import type { LaptopInput } from '../api/types';
+import { createLaptop, deleteLaptop, updateLaptop } from '../api/service';
+import type { Laptop, LaptopInput } from '../api/types';
 
 const EMPTY: LaptopInput = {
   marca: '',
@@ -30,34 +30,59 @@ const EMPTY: LaptopInput = {
   estado: 'disponible'
 };
 
+function toInput(laptop: Laptop): LaptopInput {
+  return {
+    marca: laptop.marca ?? '',
+    modelo: laptop.modelo ?? '',
+    numero_serie: laptop.numero_serie ?? '',
+    usuario: laptop.usuario ?? '',
+    equipo: laptop.equipo ?? '',
+    ubicacion: laptop.ubicacion ?? '',
+    comentarios: laptop.comentarios ?? '',
+    estado: laptop.estado
+  };
+}
+
 interface LaptopDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  laptop?: Laptop;
 }
 
-export function LaptopDialog({ open, onOpenChange }: LaptopDialogProps) {
+export function LaptopDialog({ open, onOpenChange, laptop }: LaptopDialogProps) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<LaptopInput>(EMPTY);
+  const [form, setForm] = useState<LaptopInput>(() => (laptop ? toInput(laptop) : EMPTY));
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) setForm(laptop ? toInput(laptop) : EMPTY);
+  }, [open, laptop]);
 
   const set = (key: keyof LaptopInput, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleClose = () => {
-    setForm(EMPTY);
+    setForm(laptop ? toInput(laptop) : EMPTY);
     onOpenChange(false);
   };
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const { id } = await createLaptop(form);
-      queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
-      handleClose();
-      showUndoToast('Laptop registrada correctamente', async () => {
-        await deleteLaptop(id);
+      if (laptop) {
+        await updateLaptop(laptop.id, form);
         queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
-      });
+        handleClose();
+        toast.success('Laptop actualizada correctamente');
+      } else {
+        const { id } = await createLaptop(form);
+        queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
+        handleClose();
+        showUndoToast('Laptop registrada correctamente', async () => {
+          await deleteLaptop(id);
+          queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
+        });
+      }
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al guardar');
     } finally {
@@ -69,7 +94,7 @@ export function LaptopDialog({ open, onOpenChange }: LaptopDialogProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className='max-w-lg'>
         <DialogHeader>
-          <DialogTitle>Nueva Laptop</DialogTitle>
+          <DialogTitle>{laptop ? 'Editar Laptop' : 'Nueva Laptop'}</DialogTitle>
         </DialogHeader>
 
         <div className='grid grid-cols-2 gap-4 py-2'>
@@ -163,6 +188,8 @@ export function LaptopDialog({ open, onOpenChange }: LaptopDialogProps) {
               <>
                 <Icons.spinner className='mr-2 h-4 w-4 animate-spin' /> Guardando...
               </>
+            ) : laptop ? (
+              'Guardar cambios'
             ) : (
               'Guardar laptop'
             )}

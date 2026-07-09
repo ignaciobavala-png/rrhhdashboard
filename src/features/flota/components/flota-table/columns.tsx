@@ -1,10 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Icons } from '@/components/icons';
+import { showUndoToast } from '@/lib/undo-toast';
 import type { LineaMovil } from '@/features/flota/api/types';
+import { createLineaMovil, deleteLineaMovil } from '@/features/flota/api/service';
+import { LineaMovilDialog } from '@/features/flota/components/linea-movil-dialog';
 
 const SIN_INFO = <span className='text-muted-foreground italic text-xs'>Sin información</span>;
 
@@ -19,6 +27,79 @@ const estadoLabels: Record<string, string> = {
   disponible: 'Disponible',
   baja: 'De Baja'
 };
+
+function EditCell({ linea }: { linea: LineaMovil }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-8 w-8'
+        onClick={() => setOpen(true)}
+        title='Editar'
+      >
+        <Icons.edit className='h-4 w-4' />
+      </Button>
+      <LineaMovilDialog open={open} onOpenChange={setOpen} linea={linea} />
+    </>
+  );
+}
+
+function DeleteCell({ linea }: { linea: LineaMovil }) {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    try {
+      const saved = { ...linea };
+      await deleteLineaMovil(linea.id);
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: ['flota'] });
+      showUndoToast(`Línea eliminada: ${saved.numero}`, async () => {
+        await createLineaMovil({
+          numero: saved.numero,
+          rol: saved.rol ?? '',
+          usuario: saved.usuario ?? '',
+          equipo: saved.equipo ?? '',
+          estado: saved.estado
+        });
+        queryClient.invalidateQueries({ queryKey: ['flota'] });
+      });
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Error al eliminar');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant='ghost'
+        size='icon'
+        className='h-8 w-8 text-destructive hover:text-destructive'
+        onClick={() => setOpen(true)}
+        title='Eliminar'
+      >
+        <Icons.trash className='h-4 w-4' />
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title='¿Eliminar línea?'
+        description={`Se eliminará la línea "${linea.numero}". Podés deshacer el cambio durante 10 segundos.`}
+        confirmLabel='Eliminar'
+        onConfirm={handleConfirm}
+        loading={loading}
+        destructive
+      />
+    </>
+  );
+}
 
 export const columns: ColumnDef<LineaMovil>[] = [
   {
@@ -98,5 +179,14 @@ export const columns: ColumnDef<LineaMovil>[] = [
     },
     enableColumnFilter: true,
     meta: { label: 'Estado', variant: 'text' }
+  },
+  {
+    id: 'actions',
+    cell: ({ row }) => (
+      <div className='flex items-center'>
+        <EditCell linea={row.original} />
+        <DeleteCell linea={row.original} />
+      </div>
+    )
   }
 ];
