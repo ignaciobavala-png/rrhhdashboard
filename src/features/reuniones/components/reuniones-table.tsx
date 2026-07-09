@@ -7,14 +7,18 @@ import { useDataTable } from '@/hooks/use-data-table';
 import { DataTable } from '@/components/ui/table/data-table';
 import { DataTableToolbar } from '@/components/ui/table/data-table-toolbar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
 import { columns } from './reuniones-table/columns';
 import { getReuniones } from '@/features/reuniones/api/service';
 import { NotasDialog } from './notas-dialog';
+import { ReunionDialog } from '@/features/calendario/components/reunion-dialog';
 import type { Reunion } from '@/features/reuniones/api/types';
 
 export function ReunionesTable() {
   const [notasOpen, setNotasOpen] = useState(false);
   const [selectedReunion, setSelectedReunion] = useState<Reunion | null>(null);
+  const [nuevaOpen, setNuevaOpen] = useState(false);
 
   const [params] = useQueryStates({
     page: parseAsInteger.withDefault(1),
@@ -51,9 +55,15 @@ export function ReunionesTable() {
   return (
     <>
       <DataTable table={table}>
-        <DataTableToolbar table={table} />
+        <DataTableToolbar table={table}>
+          <Button size='sm' onClick={() => setNuevaOpen(true)}>
+            <Icons.add className='mr-2 h-4 w-4' />
+            Nueva Reunión
+          </Button>
+        </DataTableToolbar>
       </DataTable>
       <NotasDialog open={notasOpen} onOpenChange={setNotasOpen} reunion={selectedReunion} />
+      <ReunionDialog open={nuevaOpen} onOpenChange={setNuevaOpen} fecha={new Date()} />
     </>
   );
 }
