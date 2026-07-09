@@ -1,10 +1,16 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getEmpleadoById, getHomeOfficeEmpleado } from '@/features/legajo/api/service';
+import { DocumentoUploader } from '@/features/documents/components/documento-uploader';
+import {
+  DocumentosTable,
+  DocumentosTableSkeleton
+} from '@/features/documents/components/documentos-table';
 import { SectionFechaNacimiento } from './sections/section-fecha-nacimiento';
 import { SectionCelular } from './sections/section-celular';
 import { SectionEmergencia } from './sections/section-emergencia';
@@ -100,6 +106,16 @@ export default function LegajoViewPage({ empleadoId }: { empleadoId: string }) {
           fecha_ingreso={empleado.fecha_ingreso}
           puesto={empleado.puesto}
         />
+      </div>
+
+      <div className='grid gap-4 md:grid-cols-1'>
+        <div className='space-y-3'>
+          <h4 className='text-sm font-semibold'>Documentos</h4>
+          <DocumentoUploader empleadoIdFijo={id} />
+          <Suspense fallback={<DocumentosTableSkeleton />}>
+            <DocumentosTable empleadoId={id} />
+          </Suspense>
+        </div>
       </div>
     </div>
   );
