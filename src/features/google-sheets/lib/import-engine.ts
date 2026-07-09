@@ -284,11 +284,21 @@ async function importLegajo(
     }
 
     if (existing) {
-      await supabase.from('empleados').update(mapped).eq('id', existing.id);
-      updated++;
+      const { error } = await supabase.from('empleados').update(mapped).eq('id', existing.id);
+      if (error) {
+        console.error('[import] empleados update:', error.message);
+        skipped++;
+      } else {
+        updated++;
+      }
     } else {
-      await supabase.from('empleados').insert(mapped);
-      created++;
+      const { error } = await supabase.from('empleados').insert({ ...mapped, empresa_id: 1 });
+      if (error) {
+        console.error('[import] empleados insert:', error.message);
+        skipped++;
+      } else {
+        created++;
+      }
     }
   }
 
@@ -454,7 +464,7 @@ async function importLineasMoviles(
         updated++;
       }
     } else {
-      const { error } = await supabase.from('lineas_moviles').insert(mapped);
+      const { error } = await supabase.from('lineas_moviles').insert({ ...mapped, empresa_id: 1 });
       if (error) {
         console.error('[import] lineas_moviles insert:', error.message);
         skipped++;
