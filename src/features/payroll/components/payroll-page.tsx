@@ -16,8 +16,11 @@ import {
   AccordionTrigger,
   AccordionContent
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Icons } from '@/components/icons';
 import { getSueldosByAnio, getAniosDisponibles } from '@/features/payroll/api/service';
 import type { Sueldo, SueldosPorEmpleado } from '@/features/payroll/api/types';
+import { SueldoDialog } from './sueldo-dialog';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
@@ -181,6 +184,7 @@ function BonosTable({ sections }: { sections: BonosSection[] }) {
 
 export function PayrollPage() {
   const [anio, setAnio] = useState<number>(2025);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: anios = [] } = useQuery({
     queryKey: ['payroll', 'anios'],
@@ -198,21 +202,29 @@ export function PayrollPage() {
 
   return (
     <div className='space-y-4'>
-      <div className='flex items-center gap-3'>
-        <span className='text-sm text-muted-foreground'>Período:</span>
-        <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
-          <SelectTrigger className='w-[100px]'>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {anios.map((a) => (
-              <SelectItem key={a} value={String(a)}>
-                {a}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className='flex items-center justify-between gap-3'>
+        <div className='flex items-center gap-3'>
+          <span className='text-sm text-muted-foreground'>Período:</span>
+          <Select value={String(anio)} onValueChange={(v) => setAnio(Number(v))}>
+            <SelectTrigger className='w-[100px]'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {anios.map((a) => (
+                <SelectItem key={a} value={String(a)}>
+                  {a}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button size='sm' onClick={() => setDialogOpen(true)}>
+          <Icons.circleCheck className='mr-2 h-4 w-4' />
+          Cargar / editar sueldo
+        </Button>
       </div>
+
+      <SueldoDialog open={dialogOpen} onOpenChange={setDialogOpen} anio={anio} />
 
       {isLoading ? (
         <p className='text-muted-foreground text-sm italic'>Cargando...</p>

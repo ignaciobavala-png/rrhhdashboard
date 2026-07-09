@@ -15,3 +15,18 @@ export type SueldosPorEmpleado = {
   moneda: 'PESOS ARG' | 'USD';
   meses: (number | null)[];
 };
+
+export type EmpleadoOption = {
+  id: number;
+  nombre_apellido: string;
+};
+
+export type SueldoInput = {
+  empleado_id: number;
+  empresa_id: number;
+  moneda: 'PESOS ARG' | 'USD';
+  mes: number;
+  anio: number;
+  monto: number | null;
+  bono_anual: number | null;
+};
