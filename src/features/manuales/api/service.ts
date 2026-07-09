@@ -61,6 +61,29 @@ export async function deleteManual(manual: Manual): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export async function softDeleteManual(manual: Manual): Promise<void> {
+  const { error } = await supabase.from('manuales').delete().eq('id', manual.id);
+  if (error) throw new Error(error.message);
+}
+
+export async function restoreManual(manual: Manual): Promise<void> {
+  const { error } = await supabase.from('manuales').insert({
+    empresa_id: manual.empresa_id,
+    tarea: manual.tarea,
+    area: manual.area,
+    storage_path: manual.storage_path,
+    nombre_archivo: manual.nombre_archivo,
+    tipo_archivo: manual.tipo_archivo,
+    tamanio: manual.tamanio
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function purgeManualStorage(storagePath: string | null): Promise<void> {
+  if (!storagePath) return;
+  await supabase.storage.from(BUCKET).remove([storagePath]);
+}
+
 export function getDownloadUrl(storagePath: string): string {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
   return data.publicUrl;

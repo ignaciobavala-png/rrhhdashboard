@@ -77,6 +77,30 @@ export async function deleteDocumento(documento: Documento): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export async function softDeleteDocumento(documento: Documento): Promise<void> {
+  const { error } = await supabase.from('documentos_empleados').delete().eq('id', documento.id);
+  if (error) throw new Error(error.message);
+}
+
+export async function restoreDocumento(documento: Documento): Promise<void> {
+  const { error } = await supabase.from('documentos_empleados').insert({
+    empresa_id: documento.empresa_id,
+    empleado_id: documento.empleado_id,
+    tipo: documento.tipo,
+    tipo_otro: documento.tipo_otro,
+    storage_path: documento.storage_path,
+    nombre_archivo: documento.nombre_archivo,
+    tipo_archivo: documento.tipo_archivo,
+    tamanio: documento.tamanio
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function purgeDocumentoStorage(storagePath: string | null): Promise<void> {
+  if (!storagePath) return;
+  await supabase.storage.from(BUCKET).remove([storagePath]);
+}
+
 export function getDownloadUrl(storagePath: string): string {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
   return data.publicUrl;

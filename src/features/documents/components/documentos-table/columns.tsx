@@ -10,7 +10,14 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Icons } from '@/components/icons';
 import type { Documento, TipoArchivo } from '@/features/documents/api/types';
-import { deleteDocumento, formatTamanio, getDownloadUrl } from '@/features/documents/api/service';
+import {
+  softDeleteDocumento,
+  restoreDocumento,
+  purgeDocumentoStorage,
+  formatTamanio,
+  getDownloadUrl
+} from '@/features/documents/api/service';
+import { showUndoToast } from '@/lib/undo-toast';
 
 const tipoIcon: Record<TipoArchivo, React.ReactNode> = {
   pdf: <Icons.fileTypePdf className='h-4 w-4 text-red-500 shrink-0' />,
@@ -42,10 +49,19 @@ function ActionsCell({ documento }: { documento: Documento }) {
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await deleteDocumento(documento);
+      await softDeleteDocumento(documento);
       setOpen(false);
-      toast.success('Documento eliminado');
       queryClient.invalidateQueries({ queryKey: ['documentos'] });
+      showUndoToast(
+        `Documento eliminado: ${documento.nombre_archivo}`,
+        async () => {
+          await restoreDocumento(documento);
+          queryClient.invalidateQueries({ queryKey: ['documentos'] });
+        },
+        () => {
+          purgeDocumentoStorage(documento.storage_path);
+        }
+      );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al eliminar');
     } finally {

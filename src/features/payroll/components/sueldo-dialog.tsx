@@ -14,7 +14,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { getEmpleadosParaSueldo, getSueldosByAnio, upsertSueldo } from '../api/service';
+import {
+  getEmpleadosParaSueldo,
+  getSueldosByAnio,
+  upsertSueldo,
+  deleteSueldoByKey
+} from '../api/service';
+import { showUndoToast } from '@/lib/undo-toast';
 import type { SueldoInput } from '../api/types';
 
 const MESES = [
@@ -98,12 +104,30 @@ export function SueldoDialog({ open, onOpenChange, anio }: SueldoDialogProps) {
       toast.error('Seleccioná un empleado');
       return;
     }
+    const existente = sueldosDelAnio.find(
+      (s) => s.empleado_id === form.empleado_id && s.mes === form.mes
+    );
     setLoading(true);
     try {
       await upsertSueldo(form);
       queryClient.invalidateQueries({ queryKey: ['payroll'] });
       handleClose();
-      toast.success('Sueldo guardado correctamente');
+      showUndoToast('Sueldo guardado correctamente', async () => {
+        if (existente) {
+          await upsertSueldo({
+            empleado_id: existente.empleado_id,
+            empresa_id: form.empresa_id,
+            moneda: existente.moneda,
+            mes: existente.mes,
+            anio: existente.anio,
+            monto: existente.monto,
+            bono_anual: existente.bono_anual
+          });
+        } else {
+          await deleteSueldoByKey(form.empleado_id, form.mes, form.anio);
+        }
+        queryClient.invalidateQueries({ queryKey: ['payroll'] });
+      });
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al guardar');
     } finally {

@@ -39,3 +39,12 @@ export async function deleteSueldo(id: number): Promise<void> {
   const { error } = await supabase.from('sueldos').delete().eq('id', id);
   if (error) throw new Error(error.message);
 }
+
+export async function deleteSueldoByKey(
+  empleado_id: number,
+  mes: number,
+  anio: number
+): Promise<void> {
+  const { error } = await supabase.from('sueldos').delete().match({ empleado_id, mes, anio });
+  if (error) throw new Error(error.message);
+}

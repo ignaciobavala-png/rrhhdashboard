@@ -8,9 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { Manual, TipoArchivo } from '@/features/manuales/api/types';
-import { deleteManual, formatTamanio, getDownloadUrl } from '@/features/manuales/api/service';
+import {
+  softDeleteManual,
+  restoreManual,
+  purgeManualStorage,
+  formatTamanio,
+  getDownloadUrl
+} from '@/features/manuales/api/service';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undo-toast';
 
 const tipoIcon: Record<TipoArchivo, React.ReactNode> = {
   pdf: <Icons.fileTypePdf className='h-4 w-4 text-red-500 shrink-0' />,
@@ -36,10 +43,19 @@ function ActionsCell({ row }: { row: { original: Manual } }) {
   const handleDelete = async () => {
     setLoading(true);
     try {
-      await deleteManual(manual);
+      await softDeleteManual(manual);
       setOpen(false);
-      toast.success('Manual eliminado');
       queryClient.invalidateQueries({ queryKey: ['manuales'] });
+      showUndoToast(
+        `Manual eliminado: ${manual.nombre_archivo ?? manual.tarea}`,
+        async () => {
+          await restoreManual(manual);
+          queryClient.invalidateQueries({ queryKey: ['manuales'] });
+        },
+        () => {
+          purgeManualStorage(manual.storage_path);
+        }
+      );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : 'Error al eliminar');
     } finally {
