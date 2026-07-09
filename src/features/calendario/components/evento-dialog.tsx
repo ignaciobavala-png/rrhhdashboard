@@ -51,13 +51,15 @@ export function EventoDialog({
   const [tipo, setTipo] = useState<string>('estudio');
   const [empleadoId, setEmpleadoId] = useState<string>('');
   const [descripcion, setDescripcion] = useState('');
+  const [fechaValue, setFechaValue] = useState(() => format(fecha));
 
   useEffect(() => {
     const tipoValido = tipos.some((t) => t.value === editingEvento?.tipo);
     setTipo(tipoValido ? (editingEvento?.tipo as string) : 'estudio');
     setEmpleadoId(editingEvento?.empleadoId ? String(editingEvento.empleadoId) : '');
     setDescripcion(editingEvento?.descripcion ?? '');
-  }, [editingEvento, open]);
+    setFechaValue(editingEvento?.fecha ?? format(fecha));
+  }, [editingEvento, open, fecha]);
 
   const handleSubmit = () => {
     if (!empleadoId) return;
@@ -65,7 +67,7 @@ export function EventoDialog({
       {
         empleado_id: Number(empleadoId),
         tipo: tipo as EventoCalendarioInput['tipo'],
-        fecha: format(fecha),
+        fecha: fechaValue,
         descripcion: descripcion.trim() || null
       },
       editingEvento?.eventoId
@@ -78,18 +80,20 @@ export function EventoDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingEvento ? 'Editar Evento' : 'Nuevo Evento'}</DialogTitle>
-          <DialogDescription>
-            {fecha.toLocaleDateString('es-AR', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric'
-            })}
-            {' · '}Para vacaciones o reuniones usá «Nuevo evento» arriba
-          </DialogDescription>
+          <DialogDescription>Para vacaciones o reuniones usá «Nuevo» arriba</DialogDescription>
         </DialogHeader>
 
         <div className='space-y-4 py-2'>
+          <div className='space-y-2'>
+            <Label htmlFor='fecha'>Fecha</Label>
+            <Input
+              id='fecha'
+              type='date'
+              value={fechaValue}
+              onChange={(e) => setFechaValue(e.target.value)}
+            />
+          </div>
+
           <div className='space-y-2'>
             <Label htmlFor='tipo'>Tipo</Label>
             <Select value={tipo} onValueChange={setTipo}>

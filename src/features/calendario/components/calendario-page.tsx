@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addMonths,
@@ -65,6 +66,7 @@ function shortName(nombreApellido: string): string {
 }
 
 export default function CalendarioPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [selectedTipos, setSelectedTipos] = useState<Set<string>>(
@@ -308,7 +310,7 @@ export default function CalendarioPage() {
             <DropdownMenuTrigger asChild>
               <Button size='sm'>
                 <Icons.add className='mr-1 h-4 w-4' />
-                Nuevo evento
+                Nuevo
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align='end'>
@@ -329,6 +331,14 @@ export default function CalendarioPage() {
                 }}
               >
                 Estudio / Ausencia / Mudanza
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  toast.info('El cumpleaños se toma de la fecha de nacimiento del legajo');
+                  router.push('/dashboard/legajo');
+                }}
+              >
+                Cumpleaños
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
