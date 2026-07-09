@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import type { Reunion } from '@/features/reuniones/api/types';
+import { buildGoogleCalendarLink } from '@/features/reuniones/lib/google-calendar-link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -81,15 +82,32 @@ export const columns: ColumnDef<Reunion, unknown>[] = [
     cell: ({ row, table }) => {
       const meta = getMeta(table);
       return (
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-7 w-7'
-          title='Editar anotaciones'
-          onClick={() => meta.openNotas(row.original)}
-        >
-          <Icons.edit className='h-3.5 w-3.5' />
-        </Button>
+        <div className='flex items-center'>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-7 w-7'
+            title='Editar anotaciones'
+            onClick={() => meta.openNotas(row.original)}
+          >
+            <Icons.edit className='h-3.5 w-3.5' />
+          </Button>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-7 w-7'
+            title='Agregar a Google Calendar'
+            asChild
+          >
+            <a
+              href={buildGoogleCalendarLink(row.original)}
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              <Icons.calendar className='h-3.5 w-3.5' />
+            </a>
+          </Button>
+        </div>
       );
     }
   }
