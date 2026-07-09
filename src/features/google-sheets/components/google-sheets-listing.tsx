@@ -27,6 +27,20 @@ async function triggerSync(sheetId: string, url: string): Promise<SyncResult> {
   return res.json();
 }
 
+function reportImportIssues(results: SyncResult[]) {
+  for (const result of results) {
+    for (const t of result.tabs) {
+      if (t.importError) {
+        toast.warning(`"${t.tabName}": falló el import a la tabla de negocio — ${t.importError}`);
+      } else if (t.importSkipped) {
+        toast.warning(
+          `"${t.tabName}": se salteó${t.importSkipped > 1 ? 'n' : ''} ${t.importSkipped} fila${t.importSkipped > 1 ? 's' : ''} por datos faltantes (revisar nombre/DNI)`
+        );
+      }
+    }
+  }
+}
+
 export function GoogleSheetsListing() {
   const queryClient = useQueryClient();
   const [syncingAll, setSyncingAll] = useState(false);
@@ -60,6 +74,7 @@ export function GoogleSheetsListing() {
       let msg = `Sheet agregado — ${tabCount} ${tabCount === 1 ? 'pestaña' : 'pestañas'} sincronizada${tabCount === 1 ? '' : 's'}`;
       if (totalImported > 0) msg += `, ${totalImported} registros importados`;
       toast.success(msg);
+      reportImportIssues([result]);
     } catch {
       toast.error('Error al sincronizar el sheet');
     }
@@ -96,6 +111,7 @@ export function GoogleSheetsListing() {
       let msg = `${sheets.length} ${sheets.length === 1 ? 'sheet sincronizado' : 'sheets sincronizados'}`;
       if (totalImported > 0) msg += ` — ${totalImported} registros importados`;
       toast.success(msg);
+      reportImportIssues(results);
     } catch {
       toast.error('Error al sincronizar');
     } finally {

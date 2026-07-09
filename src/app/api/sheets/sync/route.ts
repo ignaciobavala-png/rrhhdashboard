@@ -160,6 +160,7 @@ export async function POST(request: Request) {
 
     // ── Importar a tabla de negocio ─────────────────────────────────────────
     if (suggestedSection) {
+      const last = result.tabs[result.tabs.length - 1];
       try {
         const importResult = await importSheetData(
           suggestedSection,
@@ -168,14 +169,22 @@ export async function POST(request: Request) {
           tab.name
         );
         if (importResult) {
-          const last = result.tabs[result.tabs.length - 1];
           last.importCreated = importResult.created;
           last.importUpdated = importResult.updated;
           last.importSkipped = importResult.skipped;
         }
       } catch (importError) {
-        const last = result.tabs[result.tabs.length - 1];
         last.importError = (importError as Error).message;
+      } finally {
+        await supabase
+          .from('sheet_syncs')
+          .update({
+            import_created: last.importCreated ?? null,
+            import_updated: last.importUpdated ?? null,
+            import_skipped: last.importSkipped ?? null,
+            import_error: last.importError ?? null
+          })
+          .eq('id', sync.id);
       }
     }
   }
