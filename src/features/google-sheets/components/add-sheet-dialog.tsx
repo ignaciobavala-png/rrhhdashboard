@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { addGoogleSheet } from '../api/service';
+import { showUndoToast } from '@/lib/undo-toast';
+import { addGoogleSheet, deleteGoogleSheet } from '../api/service';
 import type { GoogleSheet } from '../api/types';
 
 type Props = {
@@ -38,12 +39,15 @@ export function AddSheetDialog({ onAdded }: Props) {
       }),
     onSuccess: (sheet) => {
       queryClient.invalidateQueries({ queryKey: ['google-sheets'] });
-      toast.success('Sheet agregado — sincronizando datos…');
       setOpen(false);
       setName('');
       setUrl('');
       setDescription('');
       onAdded?.(sheet);
+      showUndoToast('Sheet agregado — sincronizando datos…', async () => {
+        await deleteGoogleSheet(sheet.id);
+        queryClient.invalidateQueries({ queryKey: ['google-sheets'] });
+      });
     },
     onError: (err: Error) => toast.error(err.message)
   });

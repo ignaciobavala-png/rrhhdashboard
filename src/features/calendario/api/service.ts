@@ -101,3 +101,22 @@ export async function registrarVacaciones(
   }
   return data;
 }
+
+export async function revertirVacaciones(
+  empleado_id: number,
+  fecha_inicio: string,
+  fecha_fin: string,
+  periodo_anio: number
+) {
+  const { data, error } = await supabase.rpc('revertir_vacaciones', {
+    p_empleado_id: empleado_id,
+    p_fecha_inicio: fecha_inicio,
+    p_fecha_fin: fecha_fin,
+    p_periodo_anio: periodo_anio
+  });
+  if (error) {
+    console.error('[calendario] revertir vacaciones error:', error.message);
+    throw new Error(error.message);
+  }
+  return data;
+}

@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { addSheetRow } from '../api/service';
+import { showUndoToast } from '@/lib/undo-toast';
+import { addSheetRow, deleteSheetRow } from '../api/service';
 import type { ColumnType } from '../api/types';
 
 type Props = {
@@ -68,11 +69,14 @@ export function AddRowDialog({
 
   const mutation = useMutation({
     mutationFn: () => addSheetRow(syncId, sheetId, values, nextRowIndex),
-    onSuccess: () => {
+    onSuccess: (row) => {
       queryClient.invalidateQueries({ queryKey: ['sheet-rows', syncId] });
-      toast.success('Fila agregada');
       reset();
       onOpenChange(false);
+      showUndoToast('Fila agregada', async () => {
+        await deleteSheetRow(row.id);
+        queryClient.invalidateQueries({ queryKey: ['sheet-rows', syncId] });
+      });
     },
     onError: (err: Error) => toast.error(err.message)
   });

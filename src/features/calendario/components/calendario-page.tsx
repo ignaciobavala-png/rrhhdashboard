@@ -39,6 +39,7 @@ import {
   getEmpleadosCumpleanos,
   getEmpleadosActivos,
   registrarVacaciones,
+  revertirVacaciones,
   crearEvento,
   actualizarEvento,
   eliminarEvento,
@@ -310,8 +311,16 @@ export default function CalendarioPage() {
         values.fecha_fin,
         values.periodo_anio
       );
-      toast.success('Vacaciones registradas correctamente');
       queryClient.invalidateQueries({ queryKey: ['calendario'] });
+      showUndoToast('Vacaciones registradas correctamente', async () => {
+        await revertirVacaciones(
+          values.empleado_id,
+          values.fecha_inicio,
+          values.fecha_fin,
+          values.periodo_anio
+        );
+        queryClient.invalidateQueries({ queryKey: ['calendario'] });
+      });
     },
     [queryClient]
   );

@@ -17,7 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
-import { getGoogleSheets, deleteGoogleSheet } from '../api/service';
+import { showUndoToast } from '@/lib/undo-toast';
+import { getGoogleSheets, deleteGoogleSheet, addGoogleSheet } from '../api/service';
 import { AddSheetDialog } from './add-sheet-dialog';
 import { SheetDataViewer } from './sheet-data-viewer';
 import type { GoogleSheet, SyncResult } from '../api/types';
@@ -82,9 +83,20 @@ export function GoogleSheetsListing() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteGoogleSheet(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
+      const deleted = sheets.find((s) => s.id === id);
       queryClient.invalidateQueries({ queryKey: ['google-sheets'] });
-      toast.success('Sheet eliminado');
+      showUndoToast('Sheet eliminado', async () => {
+        if (deleted) {
+          const recreated = await addGoogleSheet({
+            name: deleted.name,
+            url: deleted.url,
+            description: deleted.description
+          });
+          await triggerSync(recreated.id, recreated.url);
+        }
+        queryClient.invalidateQueries({ queryKey: ['google-sheets'] });
+      });
     },
     onError: (err: Error) => toast.error(err.message)
   });

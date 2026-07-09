@@ -20,6 +20,11 @@ export async function marcarTodasLeidas(): Promise<void> {
   await supabase.from('notificaciones').update({ leida: true }).eq('leida', false);
 }
 
+export async function marcarNoLeidas(ids: number[]): Promise<void> {
+  if (ids.length === 0) return;
+  await supabase.from('notificaciones').update({ leida: false }).in('id', ids);
+}
+
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 
 export async function getProximosEventos(): Promise<ProximoEvento[]> {

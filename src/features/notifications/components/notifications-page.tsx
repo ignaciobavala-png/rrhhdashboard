@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undo-toast';
 import { sectionHelp } from '@/config/section-help';
 import {
   getNotificaciones,
   getProximosEventos,
   marcarLeida,
-  marcarTodasLeidas
+  marcarTodasLeidas,
+  marcarNoLeidas
 } from '../api/service';
 import type { Notificacion, ProximoEvento } from '../api/types';
 
@@ -230,9 +231,13 @@ export default function NotificationsPage() {
   };
 
   const handleReadAll = async () => {
+    const idsAntes = actividad.filter((n) => !n.leida).map((n) => n.id);
     await marcarTodasLeidas();
-    toast.success('Todas las notificaciones marcadas como leídas');
     queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+    showUndoToast('Todas las notificaciones marcadas como leídas', async () => {
+      await marcarNoLeidas(idsAntes);
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
+    });
   };
 
   const lista = tab === 'no-leidos' ? actividad.filter((n) => !n.leida) : actividad;
