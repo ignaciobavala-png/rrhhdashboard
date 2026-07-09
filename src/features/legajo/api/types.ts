@@ -13,7 +13,7 @@ export type Empleado = {
   direccion: string | null;
   movilidad: string | null;
   puesto: string | null;
-  modalidad: 'presencial' | 'home_office' | 'hibrido';
+  modalidad: 'presencial' | 'home_office' | 'hibrido' | 'n/a';
   created_at: string;
   updated_at: string;
 };

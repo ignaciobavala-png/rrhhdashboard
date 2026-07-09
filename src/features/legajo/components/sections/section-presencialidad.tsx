@@ -17,7 +17,8 @@ interface Props {
 const modalidadOptions = [
   { value: 'presencial', label: 'Presencial', color: 'bg-blue-500/10 text-blue-600' },
   { value: 'home_office', label: 'Home Office', color: 'bg-emerald-500/10 text-emerald-600' },
-  { value: 'hibrido', label: 'Híbrido', color: 'bg-amber-500/10 text-amber-600' }
+  { value: 'hibrido', label: 'Híbrido', color: 'bg-amber-500/10 text-amber-600' },
+  { value: 'n/a', label: 'N/A', color: 'bg-gray-500/10 text-gray-600' }
 ] as const;
 
 const diaLabels: Record<string, string> = {
@@ -47,7 +48,7 @@ export function SectionPresencialidad({ empleadoId, modalidad, homeOffice, onDat
     setSaving(true);
     try {
       await updateEmpleado(empleadoId, {
-        modalidad: editModalidad as 'presencial' | 'home_office' | 'hibrido'
+        modalidad: editModalidad as 'presencial' | 'home_office' | 'hibrido' | 'n/a'
       });
       for (const h of homeOffice) {
         const newMod = editHO[h.dia_semana];

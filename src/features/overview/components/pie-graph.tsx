@@ -17,19 +17,22 @@ const chartConfig = {
   cantidad: { label: 'Empleados' },
   presencial: { label: 'Presencial', color: 'var(--chart-1)' },
   home_office: { label: 'Home Office', color: 'var(--chart-2)' },
-  hibrido: { label: 'Híbrido', color: 'var(--chart-3)' }
+  hibrido: { label: 'Híbrido', color: 'var(--chart-3)' },
+  'n/a': { label: 'N/A', color: 'var(--chart-4)' }
 } satisfies ChartConfig;
 
 const labels: Record<string, string> = {
   presencial: 'Presencial',
   home_office: 'Home Office',
-  hibrido: 'Híbrido'
+  hibrido: 'Híbrido',
+  'n/a': 'N/A'
 };
 
 const colors: Record<string, string> = {
   presencial: 'var(--chart-1)',
   home_office: 'var(--chart-2)',
-  hibrido: 'var(--chart-3)'
+  hibrido: 'var(--chart-3)',
+  'n/a': 'var(--chart-4)'
 };
 
 export function PieGraph() {

@@ -39,13 +39,15 @@ function initials(nombreApellido: string): string {
 const modalidadColors: Record<string, string> = {
   home_office: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   presencial: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-  hibrido: 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+  hibrido: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  'n/a': 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
 };
 
 const modalidadLabels: Record<string, string> = {
   home_office: 'Home Office',
   presencial: 'Presencial',
-  hibrido: 'Híbrido'
+  hibrido: 'Híbrido',
+  'n/a': 'N/A'
 };
 
 export const columns: ColumnDef<Empleado>[] = [
@@ -205,6 +207,7 @@ export const columns: ColumnDef<Empleado>[] = [
             <option value='home_office'>Home Office</option>
             <option value='presencial'>Presencial</option>
             <option value='hibrido'>Híbrido</option>
+            <option value='n/a'>N/A</option>
           </select>
         );
       }
