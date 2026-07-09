@@ -63,9 +63,14 @@ export type EventoCalendarioInput = {
   descripcion?: string | null;
 };
 
-export async function crearEvento(input: EventoCalendarioInput): Promise<void> {
-  const { error } = await supabase.from('eventos_calendario').insert(input);
+export async function crearEvento(input: EventoCalendarioInput): Promise<number> {
+  const { data, error } = await supabase
+    .from('eventos_calendario')
+    .insert(input)
+    .select('id')
+    .single();
   if (error) throw new Error(error.message);
+  return data.id;
 }
 
 export async function actualizarEvento(id: number, input: EventoCalendarioInput): Promise<void> {

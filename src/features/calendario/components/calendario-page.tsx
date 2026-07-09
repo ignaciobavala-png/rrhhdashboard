@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
+import { showUndoToast } from '@/lib/undo-toast';
 import { EventoDialog } from './evento-dialog';
 import { VacacionesDialog } from './vacaciones-dialog';
 import {
@@ -253,23 +254,49 @@ export default function CalendarioPage() {
   const handleSave = async (input: EventoCalendarioInput, eventoId?: number) => {
     try {
       if (eventoId !== undefined) {
+        const previousInput: EventoCalendarioInput | null = editingEvento
+          ? {
+              empleado_id: editingEvento.empleadoId,
+              tipo: editingEvento.tipo as EventoCalendarioInput['tipo'],
+              fecha: editingEvento.fecha,
+              descripcion: editingEvento.descripcion ?? null
+            }
+          : null;
         await actualizarEvento(eventoId, input);
-        toast.success('Evento actualizado');
+        queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+        showUndoToast('Evento actualizado', async () => {
+          if (previousInput) await actualizarEvento(eventoId, previousInput);
+          queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+        });
       } else {
-        await crearEvento(input);
-        toast.success('Evento creado');
+        const newId = await crearEvento(input);
+        queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+        showUndoToast('Evento creado', async () => {
+          await eliminarEvento(newId);
+          queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+        });
       }
-      queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
     } catch (err) {
       toast.error(`No se pudo guardar el evento: ${(err as Error).message}`);
     }
   };
 
   const handleDelete = async (eventoId: number) => {
+    const previousInput: EventoCalendarioInput | null = editingEvento
+      ? {
+          empleado_id: editingEvento.empleadoId,
+          tipo: editingEvento.tipo as EventoCalendarioInput['tipo'],
+          fecha: editingEvento.fecha,
+          descripcion: editingEvento.descripcion ?? null
+        }
+      : null;
     try {
       await eliminarEvento(eventoId);
-      toast.success('Evento eliminado');
       queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+      showUndoToast('Evento eliminado', async () => {
+        if (previousInput) await crearEvento(previousInput);
+        queryClient.invalidateQueries({ queryKey: ['calendario', 'eventos'] });
+      });
     } catch (err) {
       toast.error(`No se pudo eliminar el evento: ${(err as Error).message}`);
     }
