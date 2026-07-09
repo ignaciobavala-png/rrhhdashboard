@@ -26,6 +26,10 @@ function formatTick(v: number): string {
   return `$${v}`;
 }
 
+function formatExacto(v: number): string {
+  return `$${v.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
+}
+
 export function MasaSalarialChart() {
   const { data: chartData = [] } = useQuery({
     queryKey: ['overview', 'masa-salarial'],
@@ -109,7 +113,7 @@ export function MasaSalarialChart() {
               />
               <ChartTooltip
                 cursor={false}
-                content={<ChartTooltipContent formatter={(value) => formatTick(Number(value))} />}
+                content={<ChartTooltipContent formatter={(value) => formatExacto(Number(value))} />}
               />
               <Area
                 dataKey='ars'

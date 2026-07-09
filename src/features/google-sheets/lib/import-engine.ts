@@ -70,9 +70,28 @@ function parseBool(val: string): boolean | null {
   return null;
 }
 
+// Soporta tanto "$1.750.000,50" (AR: punto miles, coma decimal) como
+// "$1,750,000" (coma miles, sin decimales) — el separador que aparece al
+// final con 1 o 2 dígitos se asume decimal; el resto son miles y se descartan.
 function parseNumber(val: string): number | null {
-  const cleaned = val.replace(/[^0-9.,-]/g, '').replace(',', '.');
-  const n = parseFloat(cleaned);
+  let s = val.trim().replace(/[^0-9.,-]/g, '');
+  if (!s) return null;
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  if (hasComma && hasDot) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    s = lastComma > lastDot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (hasComma) {
+    const parts = s.split(',');
+    const lastPart = parts[parts.length - 1];
+    s = parts.length === 2 && lastPart.length <= 2 ? parts.join('.') : parts.join('');
+  } else if (hasDot) {
+    const parts = s.split('.');
+    const lastPart = parts[parts.length - 1];
+    if (!(parts.length === 2 && lastPart.length <= 2)) s = parts.join('');
+  }
+  const n = parseFloat(s);
   return isNaN(n) ? null : n;
 }
 
@@ -107,6 +126,15 @@ async function resolveEmpleadoId(name: string): Promise<number | null> {
       .ilike('nombre_apellido', `%${surname}%`)
       .limit(1);
     if (bySurname && bySurname.length > 0) return bySurname[0].id;
+  }
+
+  // Nombre y apellido en cualquier orden ("Tubio Eliana" vs "TUBIO, Eliana")
+  const inputKey = tokens(clean).toSorted().join('_');
+  if (inputKey) {
+    const { data: candidatos } = await supabase.from('empleados').select('id,nombre_apellido');
+    for (const c of candidatos ?? []) {
+      if (tokens(c.nombre_apellido).toSorted().join('_') === inputKey) return c.id;
+    }
   }
 
   return null;
@@ -615,13 +643,23 @@ async function importSueldos(
         .maybeSingle();
 
       if (existing) {
-        await supabase.from('sueldos').update({ monto }).eq('id', existing.id);
-        updated++;
+        const { error } = await supabase.from('sueldos').update({ monto }).eq('id', existing.id);
+        if (error) {
+          console.error('[import] sueldos update:', error.message);
+          skipped++;
+        } else {
+          updated++;
+        }
       } else {
-        await supabase
+        const { error } = await supabase
           .from('sueldos')
-          .insert({ empleado_id: empleadoId, mes, anio: rowAnio, moneda, monto });
-        created++;
+          .insert({ empresa_id: 1, empleado_id: empleadoId, mes, anio: rowAnio, moneda, monto });
+        if (error) {
+          console.error('[import] sueldos insert:', error.message);
+          skipped++;
+        } else {
+          created++;
+        }
       }
     }
     return { section: 'Sueldos', created, updated, skipped };
@@ -655,13 +693,23 @@ async function importSueldos(
         .maybeSingle();
 
       if (existing) {
-        await supabase.from('sueldos').update({ monto }).eq('id', existing.id);
-        updated++;
+        const { error } = await supabase.from('sueldos').update({ monto }).eq('id', existing.id);
+        if (error) {
+          console.error('[import] sueldos update:', error.message);
+          skipped++;
+        } else {
+          updated++;
+        }
       } else {
-        await supabase
+        const { error } = await supabase
           .from('sueldos')
-          .insert({ empleado_id: empleadoId, mes: month, anio, moneda, monto });
-        created++;
+          .insert({ empresa_id: 1, empleado_id: empleadoId, mes: month, anio, moneda, monto });
+        if (error) {
+          console.error('[import] sueldos insert:', error.message);
+          skipped++;
+        } else {
+          created++;
+        }
       }
     }
   }

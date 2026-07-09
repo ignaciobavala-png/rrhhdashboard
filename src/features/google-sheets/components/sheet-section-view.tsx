@@ -68,13 +68,21 @@ export function SheetSectionView({ sectionSlug }: Props) {
       });
 
       // Invalidate dashboard queries for this section
-      if (sectionName === 'Legajo' || sectionName === 'People')
-        queryClient.invalidateQueries({ queryKey: ['empleados'] });
-      if (sectionName === 'Vacaciones') queryClient.invalidateQueries({ queryKey: ['vacaciones'] });
-      if (sectionName === 'Sueldos') queryClient.invalidateQueries({ queryKey: ['sueldos'] });
+      if (sectionName === 'Legajo' || sectionName === 'People') {
+        queryClient.invalidateQueries({ queryKey: ['legajo'] });
+        queryClient.invalidateQueries({ queryKey: ['overview'] });
+      }
+      if (sectionName === 'Vacaciones') {
+        queryClient.invalidateQueries({ queryKey: ['calendario'] });
+        queryClient.invalidateQueries({ queryKey: ['overview'] });
+      }
+      if (sectionName === 'Sueldos') {
+        queryClient.invalidateQueries({ queryKey: ['payroll'] });
+        queryClient.invalidateQueries({ queryKey: ['overview'] });
+      }
       if (sectionName === 'Flota') {
-        queryClient.invalidateQueries({ queryKey: ['lineas-moviles'] });
-        queryClient.invalidateQueries({ queryKey: ['laptops'] });
+        queryClient.invalidateQueries({ queryKey: ['flota'] });
+        queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
       }
       queryClient.invalidateQueries({ queryKey: ['calendario'] });
       queryClient.invalidateQueries({ queryKey: ['notificaciones'] });

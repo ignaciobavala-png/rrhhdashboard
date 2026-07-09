@@ -47,17 +47,20 @@ export function SheetDataViewer({ sheetId, url }: Props) {
         result.tabs.filter((t) => t.suggestedSection).map((t) => t.suggestedSection!)
       );
       if (sections.has('Legajo') || sections.has('People')) {
-        queryClient.invalidateQueries({ queryKey: ['empleados'] });
+        queryClient.invalidateQueries({ queryKey: ['legajo'] });
+        queryClient.invalidateQueries({ queryKey: ['overview'] });
       }
       if (sections.has('Vacaciones')) {
-        queryClient.invalidateQueries({ queryKey: ['vacaciones'] });
+        queryClient.invalidateQueries({ queryKey: ['calendario'] });
+        queryClient.invalidateQueries({ queryKey: ['overview'] });
       }
       if (sections.has('Sueldos')) {
-        queryClient.invalidateQueries({ queryKey: ['sueldos'] });
+        queryClient.invalidateQueries({ queryKey: ['payroll'] });
+        queryClient.invalidateQueries({ queryKey: ['overview'] });
       }
       if (sections.has('Flota')) {
-        queryClient.invalidateQueries({ queryKey: ['lineas-moviles'] });
-        queryClient.invalidateQueries({ queryKey: ['laptops'] });
+        queryClient.invalidateQueries({ queryKey: ['flota'] });
+        queryClient.invalidateQueries({ queryKey: ['flota-laptops'] });
       }
       queryClient.invalidateQueries({ queryKey: ['calendario'] });
       queryClient.invalidateQueries({ queryKey: ['notificaciones'] });

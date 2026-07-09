@@ -31,12 +31,18 @@ async function parseXlsxFromGoogle(googleSheetId: string): Promise<ParsedTab[]> 
 
     const range = XLSX.utils.decode_range(ref);
 
-    // Extract headers from first row
+    // Extract headers from first row. Los nombres repetidos (ej. dos columnas
+    // "Enero" para años distintos) se desambiguan con un sufijo para que no se
+    // pisen entre sí al armar el objeto de cada fila.
     const headers: string[] = [];
+    const headerCounts = new Map<string, number>();
     for (let c = range.s.c; c <= range.e.c; c++) {
       const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c })];
       const val = cell ? String(XLSX.utils.format_cell(cell)).trim() : '';
-      if (val) headers.push(val);
+      if (!val) continue;
+      const count = headerCounts.get(val) ?? 0;
+      headerCounts.set(val, count + 1);
+      headers.push(count === 0 ? val : `${val} (${count + 1})`);
     }
     if (headers.length === 0) return { name, index, headers: [], rows: [] };
 

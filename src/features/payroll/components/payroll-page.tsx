@@ -26,10 +26,8 @@ const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'O
 
 function formatMonto(monto: number | null, moneda: 'PESOS ARG' | 'USD'): string {
   if (monto === null || monto === 0) return '—';
-  if (moneda === 'USD') return `U$D ${monto.toLocaleString('es-AR')}`;
-  if (monto >= 1_000_000) return `$${(monto / 1_000_000).toFixed(2)}M`;
-  if (monto >= 1_000) return `$${(monto / 1_000).toFixed(0)}K`;
-  return `$${monto}`;
+  const exacto = monto.toLocaleString('es-AR', { maximumFractionDigits: 2 });
+  return moneda === 'USD' ? `U$D ${exacto}` : `$${exacto}`;
 }
 
 function buildPivot(sueldos: Sueldo[], moneda: 'PESOS ARG' | 'USD'): SueldosPorEmpleado[] {
