@@ -100,50 +100,103 @@ function EventoRow({ ev }: { ev: ProximoEvento }) {
   );
 }
 
+const CAMPOS_OCULTOS = new Set(['id', 'created_at', 'updated_at']);
+
+function DiffValores({
+  anterior,
+  nuevo
+}: {
+  anterior: Record<string, unknown>;
+  nuevo: Record<string, unknown>;
+}) {
+  const claves = Object.keys(nuevo).filter(
+    (k) => !CAMPOS_OCULTOS.has(k) && JSON.stringify(anterior[k]) !== JSON.stringify(nuevo[k])
+  );
+
+  if (claves.length === 0) {
+    return <p className='text-xs text-muted-foreground italic'>Sin cambios detectables.</p>;
+  }
+
+  return (
+    <div className='mt-2 space-y-1.5 rounded-md border bg-background/50 p-2.5'>
+      {claves.map((campo) => (
+        <div key={campo} className='grid grid-cols-[100px_1fr] gap-2 text-xs'>
+          <span className='text-muted-foreground truncate'>{campo}</span>
+          <div className='flex flex-wrap items-center gap-1.5'>
+            <span className='rounded bg-red-500/10 px-1.5 py-0.5 text-red-600 line-through dark:text-red-400'>
+              {String(anterior[campo] ?? '—')}
+            </span>
+            <Icons.chevronRight className='h-3 w-3 text-muted-foreground' />
+            <span className='rounded bg-emerald-500/10 px-1.5 py-0.5 text-emerald-600 dark:text-emerald-400'>
+              {String(nuevo[campo] ?? '—')}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function NotifRow({ notif, onRead }: { notif: Notificacion; onRead: (id: number) => void }) {
+  const [showDiff, setShowDiff] = useState(false);
   const icon = entidadIcon[notif.entidad] ?? <Icons.notification className='h-4 w-4' />;
+  const tieneDiff = notif.accion === 'modificacion' && notif.valor_anterior && notif.valor_nuevo;
+
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-lg px-4 py-3 transition-colors',
+        'rounded-lg px-4 py-3 transition-colors',
         notif.leida ? 'bg-muted/30' : 'bg-muted'
       )}
     >
-      <div
-        className={cn(
-          'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-          accionColor[notif.accion] ?? 'bg-muted-foreground/10 text-muted-foreground'
-        )}
-      >
-        {icon}
-      </div>
-      <div className='min-w-0 flex-1'>
-        <div className='flex items-center gap-2'>
-          <p className={cn('text-sm', notif.leida ? 'text-muted-foreground' : 'font-medium')}>
-            {notif.descripcion}
-          </p>
-          {!notif.leida && <div className='h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500' />}
-        </div>
-        <div className='mt-0.5 flex items-center gap-2'>
-          <Badge
-            variant='outline'
-            className={cn('text-[10px] px-1.5 py-0', accionColor[notif.accion])}
-          >
-            {accionLabel[notif.accion]}
-          </Badge>
-          <span className='text-[11px] text-muted-foreground/60'>
-            {tiempoRelativo(notif.created_at)}
-          </span>
-        </div>
-      </div>
-      {!notif.leida && (
-        <button
-          onClick={() => onRead(notif.id)}
-          className='mt-0.5 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground'
-          title='Marcar como leído'
+      <div className='flex items-start gap-3'>
+        <div
+          className={cn(
+            'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+            accionColor[notif.accion] ?? 'bg-muted-foreground/10 text-muted-foreground'
+          )}
         >
-          <Icons.check className='h-3.5 w-3.5' />
-        </button>
+          {icon}
+        </div>
+        <div className='min-w-0 flex-1'>
+          <div className='flex items-center gap-2'>
+            <p className={cn('text-sm', notif.leida ? 'text-muted-foreground' : 'font-medium')}>
+              {notif.descripcion}
+            </p>
+            {!notif.leida && <div className='h-1.5 w-1.5 shrink-0 rounded-full bg-sky-500' />}
+          </div>
+          <div className='mt-0.5 flex items-center gap-2'>
+            <Badge
+              variant='outline'
+              className={cn('text-[10px] px-1.5 py-0', accionColor[notif.accion])}
+            >
+              {accionLabel[notif.accion]}
+            </Badge>
+            <span className='text-[11px] text-muted-foreground/60'>
+              {tiempoRelativo(notif.created_at)}
+            </span>
+            {tieneDiff && (
+              <button
+                onClick={() => setShowDiff((v) => !v)}
+                className='text-[11px] text-muted-foreground underline-offset-2 hover:underline'
+              >
+                {showDiff ? 'Ocultar cambios' : 'Ver qué cambió'}
+              </button>
+            )}
+          </div>
+        </div>
+        {!notif.leida && (
+          <button
+            onClick={() => onRead(notif.id)}
+            className='mt-0.5 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground'
+            title='Marcar como leído'
+          >
+            <Icons.check className='h-3.5 w-3.5' />
+          </button>
+        )}
+      </div>
+      {tieneDiff && showDiff && (
+        <DiffValores anterior={notif.valor_anterior!} nuevo={notif.valor_nuevo!} />
       )}
     </div>
   );
